@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>title</title>
+    <meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=yes">
+</head>
+<body>
+    <page>
+        <yield to="header"><hd title="腾讯课堂"></hd></yield>
+        <yield to="body">
+            <cnt>
+                <yield to="content">
+
+                    <index id="container" name="long" course-list="...">
+                        <yield to="list">
+                            <coursecard2 q-repeat="opts.courseList" pic="this.pic" title="this.title" price="this.price" desc="this.desc"></coursecard2>
+                        </yield>
+                    </index>
+                    <ft now-year="2016"></ft>
+                    
+                </yield>
+            </cnt>
+        </yield>
+        <yield to="ft">
+            <ft2 now-year="2016" btn-str="goToTop"></ft2>
+        </yield>
+    </page>
+
+    <!-- 引入 js -->
+    <!-- 引入 js -->
+
+    <!-- 入口 -->
+    <script>
+    </script>
+</body>
+</html>

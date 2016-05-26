@@ -1,0 +1,24 @@
+{
+  "name": "q-framework",
+  "version": "0.0.1",
+  "description": "a framework based on Q.js2",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [
+    "Q",
+    "Qjs",
+    "framework"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/longyiyiyu/q-framework.git"
+  },
+  "author": "longyiyiyu",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/longyiyiyu/q-framework/issues"
+  },
+  "homepage": "https://github.com/longyiyiyu/q-framework#readme"
+}

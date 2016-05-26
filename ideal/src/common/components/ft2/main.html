@@ -1,0 +1,11 @@
+<ft2>
+    <!-- 继承 ft 组件 -->
+    <!-- 样式扩展直接用后代选择器扩展，如： -->
+    <!-- ft2 ft { /* ... */ } -->
+    <ft now-year="props.nowYear" btn-str="props.btnStr">
+        <!-- 继承扩展的 样式class 用自己组件的 -->
+        <yield to="btn"><a href="javascript:void(0)" class="ft2__btn">{props.btnStr}</a></yield>
+    </ft>
+    <!-- ft2 是第2层继承，如果还需要扩展可以继续用 yield 的方式继承扩展 -->
+    <!-- 但是不建议大于3层的继承，因为这样代码比较难以读懂，难读懂表示难维护 -->
+</ft2>
