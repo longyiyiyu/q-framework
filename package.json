@@ -20,5 +20,9 @@
   "bugs": {
     "url": "https://github.com/longyiyiyu/q-framework/issues"
   },
-  "homepage": "https://github.com/longyiyiyu/q-framework#readme"
+  "homepage": "https://github.com/longyiyiyu/q-framework#readme",
+  "devDependencies": {
+    "should": "^8.4.0",
+    "webpack": "^1.13.1"
+  }
 }
