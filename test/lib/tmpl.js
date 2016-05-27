@@ -76,10 +76,23 @@ describe('lib/tmpl', function() {
         should(render('/x/.test(str)')).be.eql(true);
         should(render('true ? "a b c" : "foo"')).be.eql('a b c');
         should(render('true ? "a \\"b\\" c" : "foo"')).be.eql('a "b" c');
-        should(render('str + " y" + \' z\'}')).be.eql('x y z');
+        should(render('str + " y" + \' z\'')).be.eql('x y z');
         should(render('esc')).be.eql(data.esc);
         should(render('$a')).be.eql(0);
         should(render('$a + $b')).be.eql(1);
         should(render('this.str')).be.eql('x');
+    });
+
+    it('global variables are supported in expressions', function() {
+        should(render('globalVar')).be.eql(globalVar);
+    });
+
+    it('all comments in expressions are stripped from the output (not anymore)', function () {
+      should(render('/* comment */ /* as*/')).be.eql(undefined);
+      should(render('1 /* comment */ + 1')).be.eql(2);
+    });
+
+    it('both templates and expressions are new-line-friendly', function () {
+      should(render('\n yes \n ? 2 \n : 4 \n')).be.eql(2);
     });
 });
