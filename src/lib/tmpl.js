@@ -50,7 +50,7 @@ function _create(str) {
 
     if (expr.slice(0, 11) !== 'try{return ') expr = 'return ' + expr;
 
-    if (arguments.length > 1) console.log('--- getter:\n    `' + expr + '`\n---');
+    // if (arguments.length > 1) console.log('--- getter:\n    `' + expr + '`\n---');
 
     // Now, we can create the function to return by calling the Function constructor.
     // The parameter `E` is the error handler for runtime only.
@@ -62,10 +62,16 @@ var CH_IDEXPR = '\u2057',
     S_QBLOCKS = R_STRINGS.source + '|' +
     /(?:\breturn\s+|(?:[$\w\)\]]|\+\+|--)\s*(\/)(?![*\/]))/.source + '|' +
     /\/(?=[^*\/])[^[\/\\]*(?:(?:\[(?:\\.|[^\]\\]*)*\]|\\.)[^[\/\\]*)*?(\/)[gim]*/.source,
-    RE_CSNAME = /^(?:(-?[_A-Za-z\xA0-\xFF][-\w\xA0-\xFF]*)|\u2057(\d+)~):/,
+    // RE_CSNAME = /(?:(-?[_A-Za-z\xA0-\xFF][-\w\xA0-\xFF]*)|\u2057(\d+)~):/,
     RE_QBLOCK = new RegExp(S_QBLOCKS, 'g'),
     RE_DQUOTE = /\u2057/g,
     RE_QBMARK = /\u2057(\d+)~/g;
+
+// istanbul ignore next: not both
+var // eslint-disable-next-line max-len
+    JS_CONTEXT = '"in this?this:' + (typeof window !== 'object' ? 'global' : 'window') + ').',
+    JS_VARNAME = /[,{][$\w]+(?=:)|(:|^ *|[^$\w\.])(?!(?:typeof|true|false|null|undefined|in|instanceof|is(?:Finite|NaN)|void|NaN|new|Date|RegExp|JSON|Math)(?![$\w]))([$_A-Za-z][$\w]*)/g,
+    JS_NOPROPS = /^(?=(\.[$\w]+))\1(?:[^.[(]|$)/;
 
 var RE_BREND = {
     '(': /[()]/g,
@@ -80,58 +86,12 @@ var RE_BREND = {
  * @returns {string} Processed template, ready for evaluation.
  * @private
  */
-// function _getTmpl(str) {
-//     var qstr = [], // hidden qblocks
-//         expr,
-//         parts = brackets.split(str.replace(RE_DQUOTE, '"'), 1) // get text/expr parts
-
-//     // We can have almost anything as expressions, except comments... hope
-//     if (parts.length > 2 || parts[0]) {
-//         var i, j, list = []
-
-//         for (i = j = 0; i < parts.length; ++i) {
-
-//             expr = parts[i]
-
-//             if (expr && (expr = i & 1 // every odd element is an expression
-
-//                     ? _parseExpr(expr, 1, qstr) // mode 1 convert falsy values to "",
-//                     // except zero
-//                     : '"' + expr // ttext: convert to js literal string
-//                     .replace(/\\/g, '\\\\') // this is html, preserve backslashes
-//                     .replace(/\r\n?|\n/g, '\\n') // normalize eols
-//                     .replace(/"/g, '\\"') + // escape inner double quotes
-//                     '"' // enclose in double quotes
-
-//                 )) list[j++] = expr
-
-//         }
-
-//         expr = j < 2 ? list[0] // optimize code for 0-1 parts
-//             : '[' + list.join(',') + '].join("")'
-
-//     } else {
-
-//         expr = _parseExpr(parts[1], 0, qstr) // single expressions as raw value
-//     }
-
-//     // Restore quoted strings and regexes
-//     if (qstr[0]) {
-//         expr = expr.replace(RE_QBMARK, function(_, pos) {
-//             return qstr[pos]
-//                 .replace(/\r/g, '\\r')
-//                 .replace(/\n/g, '\\n')
-//         })
-//     }
-//     return expr
-// }
-
 function _getTmpl(str) {
     var qstr = []; // hidden qblocks
     var expr;
 
     str = str.replace(RE_DQUOTE, '"');
-    expr = _parseExpr(str, 0, qstr);
+    expr = _parseExpr(str, qstr);
 
     // Restore quoted strings and regexes
     if (qstr[0]) {
@@ -143,20 +103,6 @@ function _getTmpl(str) {
     }
 
     return expr;
-}
-
-// Skip bracketed block, uses the str value in the closure
-function skipBraces(ch, re, expr) {
-    var mm,
-        lv = 1,
-        ir = RE_BREND[ch];
-
-    ir.lastIndex = re.lastIndex;
-    while (mm = ir.exec(expr)) {
-        if (mm[0] === ch) ++lv;
-        else if (!--lv) break;
-    }
-    re.lastIndex = lv ? expr.length : ir.lastIndex;
 }
 
 /**
@@ -172,82 +118,25 @@ function skipBraces(ch, re, expr) {
  * beyond `\u00FF` by quoting the names (not recommended).
  *
  * @param   {string} expr   - The expression, without brackets
- * @param   {number} asText - 0: raw value, 1: falsy as "", except 0
  * @param   {Array}  qstr   - Where to store hidden quoted strings and regexes
  * @returns {string} Code to evaluate the expression.
  * @see {@link http://www.w3.org/TR/CSS21/grammar.html#scanner}
  *      {@link http://www.w3.org/TR/CSS21/syndata.html#tokenization}
  * @private
  */
-function _parseExpr(expr, asText, qstr) {
+function _parseExpr(expr, qstr) {
+    var tb;
+
     expr = expr
         .replace(RE_QBLOCK, function(s, div) { // hide strings & regexes
-            return s.length > 2 && !div ? CH_IDEXPR + (qstr.push(s) - 1) + '~' : s
+            return s.length > 2 && !div ? CH_IDEXPR + (qstr.push(s) - 1) + '~' : s;
         })
         .replace(/\s+/g, ' ').trim()
         .replace(/\ ?([[\({},?\.:])\ ?/g, '$1');
 
-    if (expr) {
-        var list = [],
-            cnt = 0,
-            match;
-
-        // Try to match the first name in the possible shorthand list
-        while (expr &&
-            (match = expr.match(RE_CSNAME)) &&
-            !match.index // index > 0 means error
-        ) {
-            var key,
-                jsb,
-                re = /,|([[{(])|$/g;
-
-            // Search the next unbracketed comma or the end of 'expr'.
-            // If a openning js bracket is found ($1), skip the block,
-            // if found the end of expr $1 will be empty and the while loop exits.
-
-            expr = RegExp.rightContext; // before replace
-            key = match[2] ? qstr[match[2]].slice(1, -1).trim().replace(/\s+/g, ' ') : match[1];
-
-            while (jsb = (match = re.exec(expr))[1]) skipBraces(jsb, re, expr);
-
-            jsb = expr.slice(0, match.index);
-            expr = RegExp.rightContext;
-
-            list[cnt++] = _wrapExpr(jsb, 1, key);
-        }
-
-        // For shorthands, the generated code returns an array with expression-name pairs
-        expr = !cnt ? _wrapExpr(expr, asText) : cnt > 1 ? '[' + list.join(',') + '].join(" ").trim()' : list[0];
-    }
-    return expr;
-}
-
-// Matches a varname, excludes object keys. $1: lookahead, $2: variable name
-// istanbul ignore next: not both
-var // eslint-disable-next-line max-len
-    JS_CONTEXT = '"in this?this:' + (typeof window !== 'object' ? 'global' : 'window') + ').',
-    JS_VARNAME = /[,{][$\w]+:|(^ *|[^$\w\.])(?!(?:typeof|true|false|null|undefined|in|instanceof|is(?:Finite|NaN)|void|NaN|new|Date|RegExp|Math)(?![$\w]))([$_A-Za-z][$\w]*)/g,
-    JS_NOPROPS = /^(?=(\.[$\w]+))\1(?:[^.[(]|$)/;
-
-/**
- * Generates code to evaluate an expression avoiding breaking on undefined vars.
- *
- * This function include a try..catch block only if needed, if this block is not included,
- * the generated code has no return statement.
- *
- * This `isFinite`, `isNaN`, `Date`, `RegExp`, and `Math` keywords are not wrapped
- * for context detection (defaults to the global object).
- *
- * @param   {string}  expr   - Normalized expression, without brackets
- * @param   {boolean} asText - If trueish, the output is converted to text, not raw values
- * @param   {string}  [key]  - For shorthands, the key name
- * @returns {string}  Compiled expression.
- * @private
- */
-function _wrapExpr(expr, asText, key) {
-    var tb;
-
+    // console.log('>>> [_wrapExpr]', expr, key);
     expr = expr.replace(JS_VARNAME, function(match, p, mvar, pos, s) {
+        // console.log('>>> [_wrapExpr1]', match, p, mvar, pos, s);
         if (mvar) {
             pos = tb ? 0 : pos + match.length; // check only if needed
 
@@ -265,22 +154,6 @@ function _wrapExpr(expr, asText, key) {
     if (tb) {
         expr = 'try{return ' + expr + '}catch(e){E(e,this)}';
     }
-
-    if (key) { // shorthands
-        // w/try : function(){try{return expr}catch(e){E(e,this)}}.call(this)?"name":""
-        // no try: (expr)?"name":""
-        // ==> 'return [' + expr_list.join(',') + '].join(" ").trim()'
-        expr = (tb ? 'function(){' + expr + '}.call(this)' : '(' + expr + ')') + '?"' + key + '":""';
-
-    } else if (asText) {
-        // w/try : function(v){try{v=expr}catch(e){E(e,this)};return v||v===0?v:""}.call(this)
-        // no try: function(v){return (v=(expr))||v===0?v:""}.call(this)
-        // ==> 'return [' + text_and_expr_list.join(',') + '].join("")'
-        expr = 'function(v){' + (tb ? expr.replace('return ', 'v=') : 'v=(' + expr + ')') + ';return v||v===0?v:""}.call(this)';
-    }
-    // else if (!asText)
-    //  no try: return expr
-    //  w/try : try{return expr}catch(e){E(e,this)}   // returns undefined if error
 
     return expr;
 }
