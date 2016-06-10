@@ -1,0 +1,33 @@
+{
+  "name": "zepto",
+  "version": "1.1.8",
+  "homepage": "",
+  "scripts": {
+  },
+  "repository": {
+    "type": "git",
+    "url": ""
+  },
+  "license": {
+    "type": "MIT",
+    "url": "http://zeptojs.com/license/"
+  },
+  "devDependencies": {
+  },
+  "description": "zepto",
+  "keywords": [],
+  "author": "herbertliu <herbertliuhb@gmail.com>",
+  "bugs": {
+    "url": ""
+  },
+  "licenses": "MIT",
+  "lego": {
+    "category": "1",
+    "categoryName": "基础库",
+    "main": "zepto.js",
+    "dependencies": {},
+    "devDependencies": {
+      "expect.js": "0.3.1"
+    }
+  }
+}

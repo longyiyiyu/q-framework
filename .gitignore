@@ -44,4 +44,5 @@ Temporary Items
 
 *.log
 node_modules
+lego_modules
 dist
