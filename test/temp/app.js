@@ -80,6 +80,7 @@
 	 */
 
 	var util = __webpack_require__(3);
+	var domUtil = __webpack_require__(4);
 
 	/*
 	 * component 
@@ -93,6 +94,12 @@
 	 */
 	var component = function(html, prototype, static, css) {
 	    console.log('>>> component1:', html);
+
+	    var root = domUtil.getDomTree(html);
+
+	    util.walk(root, function(dom) {
+	        console.log('>>> walk:', dom);
+	    });
 	};
 
 	util.extend(component, {
@@ -180,6 +187,10 @@
 
 	var impl = __webpack_require__(5);
 
+	function getDomTree(el) {
+	    return impl.getDomTree(el);
+	}
+
 	function getNodeType(el) {
 	    return impl.getNodeType(el);
 	}
@@ -193,6 +204,7 @@
 	}
 
 	module.exports = {
+	    getDomTree: getDomTree,
 	    getNodeType: getNodeType,
 	    getChildNodes: getChildNodes,
 	    getAttributes: getAttributes
@@ -202,18 +214,36 @@
 /* 5 */
 /***/ function(module, exports) {
 
-	
+	var div = document.createElement('div');
+	var singleTagRE = /^<(\w+)\s*\/?>(?:<\/\1>|)$/;
+	var _slice = [].slice;
+
+
 	module.exports = {
+	    getDomTree: function(html) {
+	        var dom;
+
+	        // 简单实现，要考虑特殊标签的话，请参考zepto的实现
+	        // A special case optimization for a single tag
+	        if (singleTagRE.test(html)) dom = $(document.createElement(RegExp.$1));
+	        if (!dom) {
+	            div.innerHTML = '' + html;
+	            dom = _slice.call(div.childNodes, 0);
+	        }
+
+	        return dom;
+	    },
 	    getNodeType: function(el) {
 	        return el.nodeType;
 	    },
 	    getChildNodes: function(el) {
-	        return [].slice.call(el.childNodes, 0);
+	        return _slice.call(el.childNodes, 0);
 	    },
 	    getAttributes: function(el) {
 	        return el.attributes;
 	    }
 	};
+
 
 /***/ }
 /******/ ]);

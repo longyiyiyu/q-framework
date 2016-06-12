@@ -22,6 +22,11 @@ var component = function(html, prototype, static, css) {
     console.log('>>> component1:', html);
 
     var root = domUtil.getDomTree(html);
+
+    util.walk(root, function(dom) {
+        console.log('>>> walk:', dom);
+        
+    });
 };
 
 util.extend(component, {
