@@ -1,8 +1,20 @@
 var domUtil = require('../core/dom');
 
+// simple for init
+var globalId = 1;
+
+function getId() {
+    return globalId++;
+}
+
 function walk(doms, cb) {
     var el;
     var children;
+    var r;
+
+    if (!doms || doms.length === 0) {
+        return;
+    }
 
     if (!doms.length) {
         doms = [doms];
@@ -11,31 +23,30 @@ function walk(doms, cb) {
     for (var i = 0, l = doms.length; i < l; ++i) {
         el = doms[i];
         if (domUtil.getNodeType(el) === 1) {
-            cb(el);
+            r = cb(el);
         }
 
-        children = domUtil.getChildNodes(el);
-        if (children.length) {
-            walk(children, cb);
+        if (r !== false) {
+            children = domUtil.getChildNodes(el);
+            if (children.length) {
+                walk(children, cb);
+            }
         }
     }
 }
 
-function scan(dom, cb) {
+function qFilter(k) {
+    return k.indexOf('q-') === 0;
+}
+
+function scan(dom, cb, filter) {
     var atts = domUtil.getAttributes(dom);
-    var res = [];
 
+    filter = filter || qFilter;
     for (var i = 0, l = atts.length; i < l; ++i) {
-        if (atts[i].name.indexOf('q-') === 0) {
-            res.push({
-                name: atts[i].name,
-                value: atts[i].value
-            });
+        if (filter(atts[i].name, atts[i].value)) {
+            cb(atts[i].name, atts[i].value);
         }
-    }
-
-    if (res.length) {
-        cb(res);
     }
 }
 
@@ -53,8 +64,27 @@ function extend(target, srcs) {
     return target;
 }
 
+var reHasYield = /<yield\b/i;
+var reYieldAll = /<yield\s*(?:\/>|>([\S\s]*?)<\/yield\s*>)/ig;
+var reYieldSrc = /<yield\s+to=['"]([^'">]*)['"]\s*>([\S\s]*?)<\/yield\s*>/ig;
+var reYieldDest = /<yield\s+from=['"]?([-\w]+)['"]?\s*(?:\/>|>([\S\s]*?)<\/yield\s*>)/ig;
+
+function replaceYields(html, innerHtml) {
+    if (typeof html !== 'stirng') return html;
+
+}
+
 module.exports = {
+    getId: getId,
     walk: walk,
     scan: scan,
-    extend: extend
+    extend: extend,
+    replaceYields: replaceYields,
+    noop: function() {},
+    retTure: function() {
+        return true;
+    },
+    retFalse: function() {
+        return false;
+    }
 };

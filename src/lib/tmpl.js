@@ -21,6 +21,12 @@ function _tmpl(str, data) {
     return (_cache[str] || (_cache[str] = _create(str))).call(data, _logErr);
 }
 
+_tmpl.compile = function(str) {
+    if (!str) return str;
+
+    return _cache[str] || (_cache[str] = _create(str));
+};
+
 _tmpl.errorHandler = null;
 
 /**

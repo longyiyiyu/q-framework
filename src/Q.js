@@ -7,8 +7,14 @@
  * @version 2.0.0
  * 
  */
-
-module.exports = {
-    version: '2.0.0',
-    component: require('./core/component')
+var Q = {
+    version: '2.0.0'
 };
+
+// enhance directive
+require('./core/directive')(Q);
+
+// enhance component
+require('./core/component')(Q);
+
+module.exports = Q;
