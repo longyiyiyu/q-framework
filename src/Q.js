@@ -12,9 +12,9 @@ var Q = {
 };
 
 // enhance directive
-require('./core/directive')(Q);
+require('./core/directive')(Q, Q);
 
 // enhance component
-require('./core/component')(Q);
+require('./core/component')(Q, Q);
 
 module.exports = Q;

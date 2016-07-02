@@ -23,11 +23,17 @@ module.exports = {
     getInnerHtml: function(el) {
         return el.innerHTML;
     },
+    setText: function(el, text) {
+        return (el.innerText = text);
+    },
     getNodeType: function(el) {
         return el.nodeType;
     },
     getNodeName: function(el) {
         return el.nodeName.toLowerCase();
+    },
+    getParentNode: function(el) {
+        return el.parentNode;
     },
     getChildNodes: function(el) {
         return _slice.call(el.childNodes, 0);
@@ -40,5 +46,33 @@ module.exports = {
     },
     setAttribute: function(el, key, value) {
         return el.setAttribute(key, value);
+    },
+    addClass: function(el, cls) {
+        if (el.classList) {
+            el.classList.add(cls);
+        } else {
+            var cur = ' ' + (el.className || '') + ' ';
+            if (cur.indexOf(' ' + cls + ' ') < 0) {
+                el.className = (cur + cls).trim();
+            }
+        }
+    },
+    removeClass: function(el, cls) {
+        if (el.classList) {
+            el.classList.remove(cls);
+        } else {
+            var cur = ' ' + (el.className || '') + ' ',
+                tar = ' ' + cls + ' ';
+            while (cur.indexOf(tar) >= 0) {
+                cur = cur.replace(tar, ' ');
+            }
+            el.className = cur.trim();
+        }
+    },
+    replaceChild: function(el, n, o) {
+        return el.replaceChild(n, o);
+    },
+    removeChild: function(el, n) {
+        return el.removeChild(n);
     }
 };

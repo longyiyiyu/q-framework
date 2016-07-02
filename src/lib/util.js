@@ -26,11 +26,15 @@ function walk(doms, cb) {
             r = cb(el);
         }
 
-        if (r !== false) {
-            children = domUtil.getChildNodes(el);
-            if (children.length) {
-                walk(children, cb);
-            }
+        if (r === false) {
+            continue;
+        } else if (r && r !== true) {
+            el = r;
+        }
+
+        children = domUtil.getChildNodes(el);
+        if (children.length) {
+            walk(children, cb);
         }
     }
 }
@@ -64,14 +68,10 @@ function extend(target, srcs) {
     return target;
 }
 
-var reHasYield = /<yield\b/i;
-var reYieldAll = /<yield\s*(?:\/>|>([\S\s]*?)<\/yield\s*>)/ig;
-var reYieldSrc = /<yield\s+to=['"]([^'">]*)['"]\s*>([\S\s]*?)<\/yield\s*>/ig;
-var reYieldDest = /<yield\s+from=['"]?([-\w]+)['"]?\s*(?:\/>|>([\S\s]*?)<\/yield\s*>)/ig;
-
-function replaceYields(html, innerHtml) {
-    if (typeof html !== 'stirng') return html;
-
+function getKeyFromDomProp(key) {
+    return key.replace(/-([a-zA-Z])/g, function(m, letter) {
+        return letter.toUpperCase();
+    });
 }
 
 module.exports = {
@@ -79,12 +79,12 @@ module.exports = {
     walk: walk,
     scan: scan,
     extend: extend,
-    replaceYields: replaceYields,
     noop: function() {},
-    retTure: function() {
+    retTrue: function() {
         return true;
     },
     retFalse: function() {
         return false;
-    }
+    },
+    getKeyFromDomProp: getKeyFromDomProp
 };

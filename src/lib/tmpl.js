@@ -18,7 +18,7 @@ var _cache = {};
 function _tmpl(str, data) {
     if (!str) return str; // catch falsy values here
 
-    return (_cache[str] || (_cache[str] = _create(str))).call(data, _logErr);
+    return _tmpl.compile(str).call(data, _logErr);
 }
 
 _tmpl.compile = function(str) {

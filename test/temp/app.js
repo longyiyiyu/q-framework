@@ -48,9 +48,51 @@
 
 	var Q = __webpack_require__(1);
 
-	var MyCom = Q.component('<myCom><h1 q-text="title"></h1><p q-text="summary" q-class="{big: isBig}"></p></myCom>');
+	var MyCom3 = Q.component('<MyCom3><h2 q-text="title"></h2></MyCom3>');
 
-	console.log('new com:', new MyCom());
+	var MyCom = Q.component('<myCom><h1 q-text="title"></h1><MyCom3 title="title + \' \' + summary"></MyCom3><p>constant</p><p q-text="summary" q-class="{big: isBig, blue: isBlue}"></p></myCom>');
+
+	var Com1 = Q.component('<com1><yield from="p1"></yield><h2 q-text="title"></h2><yield from="p2"></yield></com1>');
+
+	var Com2 = Q.component('<com2><yield from="p1"></yield><h3 q-text="title"></h3><yield from="p2"></yield></com2>');
+
+	var MyCom2 = Q.component('<myCom2>  <com1 title="title+\' Long! \'" desc="summary" title2="title + \'2\'"><yield to="p1"><p q-text="desc"></p></yield>  <yield to="p2"><com2 title="title+\' try! \'" title2="title2"><yield to="p1"><h1 q-text="\'title: \' + title2"></h1></yield></com2></yield></com1>   <br/><br/>   <h1 q-text="title"></h1><myCom title="title" summary="summary" is-blue="isBlue" is-big="1"></myCom><p q-text="author"></p><MyCom3 title="summary"></MyCom3></myCom2>');
+
+	// var c = new MyCom();
+	var c2 = new MyCom2();
+
+	console.log('new com:', c2);
+
+	// c.update({
+	//     title: 'Hello world!',
+	//     summary: 'hahahaha',
+	//     isBig: false,
+	//     isBlue: 1
+	// });
+
+	c2.update({
+	    title: 'Hello world!',
+	    summary: 'hahahaha',
+	    isBlue: 1,
+	    author: 'long'
+	});
+
+	console.log('after update:', c2, c2.getHtml());
+
+	c2.update({
+	    author: 'jack'
+	});
+
+	console.log('after update:', c2, c2.getHtml());
+
+	c2.update({
+	    title: 'Hello world!!!'
+	});
+
+	window.onload = function() {
+	    document.getElementById('test').appendChild(c2.getDom());
+	};
+
 
 /***/ },
 /* 1 */
@@ -89,9 +131,30 @@
 	 */
 
 	var util = __webpack_require__(3);
+	var domUtil = __webpack_require__(4);
+
+	var directives = {
+	    text: function(v, dom) {
+	        domUtil.setText(dom, v);
+	    },
+	    class: function(v, dom) {
+	        // 这里需要优化
+	        console.log('>>> directive class:', v, dom);
+	        if (!v || typeof v !== 'object') return;
+	        for (var k in v) {
+	            if (v[k]) {
+	                domUtil.addClass(dom, k);
+	            } else {
+	                domUtil.removeClass(dom, k);
+	            }
+	        }
+	    },
+	};
 
 	function getDirective(key) {
-	    console.log('>>> getDirective:', key);
+	    key = key.replace(/^q-/, '');
+
+	    return directives[key];
 	}
 
 	function enhancer(obj) {
@@ -101,6 +164,7 @@
 	}
 
 	module.exports = enhancer;
+
 
 /***/ },
 /* 3 */
@@ -134,11 +198,15 @@
 	            r = cb(el);
 	        }
 
-	        if (r !== false) {
-	            children = domUtil.getChildNodes(el);
-	            if (children.length) {
-	                walk(children, cb);
-	            }
+	        if (r === false) {
+	            continue;
+	        } else if (r && r !== true) {
+	            el = r;
+	        }
+
+	        children = domUtil.getChildNodes(el);
+	        if (children.length) {
+	            walk(children, cb);
 	        }
 	    }
 	}
@@ -172,14 +240,10 @@
 	    return target;
 	}
 
-	var reHasYield = /<yield\b/i;
-	var reYieldAll = /<yield\s*(?:\/>|>([\S\s]*?)<\/yield\s*>)/ig;
-	var reYieldSrc = /<yield\s+to=['"]([^'">]*)['"]\s*>([\S\s]*?)<\/yield\s*>/ig;
-	var reYieldDest = /<yield\s+from=['"]?([-\w]+)['"]?\s*(?:\/>|>([\S\s]*?)<\/yield\s*>)/ig;
-
-	function replaceYields(html, innerHtml) {
-	    if (typeof html !== 'stirng') return html;
-
+	function getKeyFromDomProp(key) {
+	    return key.replace(/-([a-zA-Z])/g, function(m, letter) {
+	        return letter.toUpperCase();
+	    });
 	}
 
 	module.exports = {
@@ -187,14 +251,14 @@
 	    walk: walk,
 	    scan: scan,
 	    extend: extend,
-	    replaceYields: replaceYields,
 	    noop: function() {},
-	    retTure: function() {
+	    retTrue: function() {
 	        return true;
 	    },
 	    retFalse: function() {
 	        return false;
-	    }
+	    },
+	    getKeyFromDomProp: getKeyFromDomProp
 	};
 
 
@@ -224,12 +288,20 @@
 	    return impl.getInnerHtml(el);
 	}
 
+	function setText(el, text) {
+	    return impl.setText(el, text);
+	}
+
 	function getNodeName(el) {
 	    return impl.getNodeName(el);
 	}
 
 	function getNodeType(el) {
 	    return impl.getNodeType(el);
+	}
+
+	function getParentNode(el) {
+	    return impl.getParentNode(el);
 	}
 
 	function getChildNodes(el) {
@@ -248,17 +320,40 @@
 	    return impl.setAttribute(el, key, value);
 	}
 
+	function addClass(el, c) {
+	    return impl.addClass(el, c);
+	}
+
+	function removeClass(el, c) {
+	    return impl.removeClass(el, c);
+	}
+
+	function replaceChild(el, n, o) {
+	    return impl.replaceChild(el, n, o);
+	}
+
+	function removeChild(el, n) {
+	    return impl.removeChild(el, n);
+	}
+
 	module.exports = {
 	    getDomTree: getDomTree,
 	    getDomString: getDomString,
 	    getInnerHtml: getInnerHtml,
+	    setText: setText,
 	    getNodeType: getNodeType,
 	    getNodeName: getNodeName,
+	    getParentNode: getParentNode,
 	    getChildNodes: getChildNodes,
 	    getAttributes: getAttributes,
 	    getAttribute: getAttribute,
-	    setAttribute: setAttribute
+	    setAttribute: setAttribute,
+	    addClass: addClass,
+	    removeClass: removeClass,
+	    replaceChild: replaceChild,
+	    removeChild: removeChild
 	};
+
 
 /***/ },
 /* 5 */
@@ -289,11 +384,17 @@
 	    getInnerHtml: function(el) {
 	        return el.innerHTML;
 	    },
+	    setText: function(el, text) {
+	        return (el.innerText = text);
+	    },
 	    getNodeType: function(el) {
 	        return el.nodeType;
 	    },
 	    getNodeName: function(el) {
 	        return el.nodeName.toLowerCase();
+	    },
+	    getParentNode: function(el) {
+	        return el.parentNode;
 	    },
 	    getChildNodes: function(el) {
 	        return _slice.call(el.childNodes, 0);
@@ -306,6 +407,34 @@
 	    },
 	    setAttribute: function(el, key, value) {
 	        return el.setAttribute(key, value);
+	    },
+	    addClass: function(el, cls) {
+	        if (el.classList) {
+	            el.classList.add(cls);
+	        } else {
+	            var cur = ' ' + (el.className || '') + ' ';
+	            if (cur.indexOf(' ' + cls + ' ') < 0) {
+	                el.className = (cur + cls).trim();
+	            }
+	        }
+	    },
+	    removeClass: function(el, cls) {
+	        if (el.classList) {
+	            el.classList.remove(cls);
+	        } else {
+	            var cur = ' ' + (el.className || '') + ' ',
+	                tar = ' ' + cls + ' ';
+	            while (cur.indexOf(tar) >= 0) {
+	                cur = cur.replace(tar, ' ');
+	            }
+	            el.className = cur.trim();
+	        }
+	    },
+	    replaceChild: function(el, n, o) {
+	        return el.replaceChild(n, o);
+	    },
+	    removeChild: function(el, n) {
+	        return el.removeChild(n);
 	    }
 	};
 
@@ -348,18 +477,58 @@
 	var ID_KEY = 'q-id-p';
 
 	var basePrototype = {
+	    setParent: function(p) {
+	        this.parent = p;
+	    },
+	    // TODO:
+	    // 直接获取 children 的意义并不大
+	    // 应该需要更好的获取 child 的方式
+	    getChildren: function() {
+	        return this.children;
+	    },
+	    // 关于 child 的操作不一定需要
+	    // 先暂时干掉
+	    // addChild: function(c) {
+	    //     this.children.push(c);
+	    // },
+	    // removeChild: function() {
+	    // },
 	    getDom: function() {
 	        return this.root;
 	    },
 	    getHtml: function() {
-	        return this._html;
+	        return domUtil.getDomString(this.root);
 	    },
 	    update: function(props) {
+	        console.log('>>> update:', props);
 	        // 建议只由外部调用
 	        props && util.extend(this, props);
 	        this.dc();
 	    }
 	};
+
+	function getYeildMap(root) {
+	    var map = {};
+	    var name;
+	    var key;
+	    var C;
+
+	    util.walk(root, function(dom) {
+	        name = domUtil.getNodeName(dom);
+	        C = getComClass(name);
+
+	        if (C) {
+	            return false;
+	        }
+
+	        if (name === 'yield') {
+	            key = domUtil.getAttribute(dom, 'to');
+	            map[key] = dom;
+	        }
+	    });
+
+	    return map;
+	}
 
 	/*
 	 * 获取节点的属性，组成对象
@@ -370,7 +539,7 @@
 
 	    util.scan(dom, function(k, v) {
 	        r = true;
-	        ret[k] = v;
+	        ret[util.getKeyFromDomProp(k)] = v;
 	    }, util.retTrue);
 
 	    return r ? ret : null;
@@ -400,16 +569,33 @@
 	var component = function(html, prototype, statics, css) {
 	    var self = this;
 	    var root = domUtil.getDomTree(html)[0];
+	    var comName = domUtil.getNodeName(root);
 
-	    console.log('>>> component1:', html);
+	    console.log('>>> component1:', html, comName);
 
 	    var clazz = function(innerHtml, props) {
 	        var that = this;
+	        var innerDom;
+	        var innerYieldMap;
+
+	        console.log('>>> new clazz:', clazz.comName, innerHtml, props);
+
+	        if (typeof innerHtml === 'object' && !props) {
+	            props = innerHtml;
+	            innerHtml = '';
+	        }
 
 	        buildComponent(clazz, this);
 
 	        // TODO:
 	        // this._html = util.replaceYields(this._html, innerHtml);
+
+	        if (innerHtml) {
+	            innerDom = domUtil.getDomTree(innerHtml);
+	            // 一般传进来yield就说明clazz本身是支持这些yield的
+	            // 因此这里可以预编译，把传进来的yield先解析出来
+	            innerYieldMap = getYeildMap(innerDom);
+	        }
 
 	        this.root = domUtil.getDomTree(this._html)[0];
 	        util.walk(domUtil.getChildNodes(this.root), function(dom) {
@@ -419,9 +605,21 @@
 	            var ids;
 	            var id;
 	            var child;
+	            var yieldKey;
+	            var yieldDom;
 
 	            if (name === 'yield') {
-	                // TODO:
+	                yieldKey = domUtil.getAttribute(dom, 'from');
+	                yieldDom = innerYieldMap[yieldKey];
+	                if (yieldDom) {
+	                    // console.log('>>> find yield:', dom, domUtil.getInnerHtml(dom), yieldDom, domUtil.getInnerHtml(yieldDom));
+	                    domUtil.replaceChild(domUtil.getParentNode(dom), yieldDom, dom);
+
+	                    return yieldDom;
+	                } else {
+	                    domUtil.removeChild(domUtil.getParentNode(dom), dom);
+	                    return false;
+	                }
 	            } else {
 	                ids = domUtil.getAttribute(dom, ID_KEY);
 	                if (ids) {
@@ -434,11 +632,13 @@
 	                }
 
 	                if (C) {
+	                    // console.log('>>> CCC:', C.comName, dom, domUtil.getInnerHtml(dom));
 	                    child = new C(domUtil.getInnerHtml(dom));
 	                    that.children.push(child);
+	                    child.setParent(that);
 
-	                    if (ids != 1) {
-	                        if (ids.length) {
+	                    if (ids !== 1) {
+	                        if (ids && ids.length) {
 	                            id = ids[0];
 	                        } else {
 	                            p = getPropsObj(dom);
@@ -456,18 +656,22 @@
 	                        }
 	                    }
 
+	                    domUtil.replaceChild(domUtil.getParentNode(dom), child.getDom(), dom);
+
 	                    return false;
 	                } else {
-	                    if (ids != 1) {
-	                        if (ids.length) {
+	                    if (ids !== 1) {
+	                        if (ids && ids.length) {
 	                            for (var i = 0, l = ids.length; i < l; ++i) {
-	                                that.optMap[id] = {
+	                                that.optMap[ids[i]] = {
 	                                    el: dom
 	                                };
 	                            }
 	                        } else {
 	                            util.scan(dom, function(k, v) {
-	                                var id = that.watch(v, self.getDirective(k));
+	                                var id = that.watch(v, function(nv, w) {
+	                                    self.getDirective(k).call(this, nv, this.optMap[w.id].el);
+	                                });
 
 	                                that.optMap[id] = {
 	                                    el: dom
@@ -480,12 +684,11 @@
 	        });
 
 	        if (props) {
-	            util.extend(this, props);
-
-	            this.update();
+	            this.update(props);
 	        }
 	    };
 
+	    // enhance clazz
 	    dc(clazz);
 	    yd(clazz);
 
@@ -499,9 +702,9 @@
 	        var p;
 	        var ids = [];
 
+	        // 预编译阶段不需要解析 yield
 	        if (name === 'yield') {
-	            // TODO:
-	            // clazz.setYield(dom);
+	            return true;
 	        } else {
 	            if (C) {
 	                p = getPropsObj(dom);
@@ -511,10 +714,13 @@
 	                    }));
 	                }
 
+	                domUtil.setAttribute(dom, ID_KEY, ids.length ? JSON.stringify(ids) : 1);
 	                return false;
 	            } else {
 	                util.scan(dom, function(k, v) {
-	                    ids.push(clazz.watch(v, self.getDirective(k)));
+	                    ids.push(clazz.watch(v, function(nv, w) {
+	                        self.getDirective(k).call(this, nv, this.optMap[w.id].el);
+	                    }));
 	                });
 	            }
 
@@ -527,12 +733,13 @@
 
 	    // 扩展 statics
 	    util.extend(clazz, {
+	        comName: comName,
 	        _html: domUtil.getDomString(root)
 	    }, statics);
 
-	    this.setComClass(domUtil.getNodeName(root), clazz);
+	    this.setComClass(comName, clazz);
 
-	    console.log('>>> clazz:', clazz, clazz._html, clazz.watcherMap, clazz.watchers);
+	    console.log('>>> clazz:', clazz, clazz.comName + '1', clazz._html, clazz.watcherMap, clazz.watchers);
 
 	    return clazz;
 	};
@@ -772,7 +979,37 @@
 	    console.log('>>> makeExpr:', expr);
 	    if (typeof expr === 'string') {
 	        return tmpl.compile(expr);
-	    } else if (typeof expr === 'object') {}
+	    } else if (typeof expr === 'object') {
+	        // return util.noop;
+	        return (function() {
+	            var o = {};
+	            var ret = {};
+
+	            for (var k in expr) {
+	                if (expr.hasOwnProperty(k)) {
+	                    o[k] = tmpl.compile(expr[k]);
+	                }
+	            }
+
+	            return function() {
+	                var temp = {};
+	                var hasChange = false;
+
+	                for (var k in o) {
+	                    temp[k] = o[k].call(this);
+	                    if (!hasChange && ret && ret[k] !== temp[k]) {
+	                        hasChange = true;
+	                    }
+	                }
+
+	                if (hasChange) {
+	                    ret = temp;
+	                }
+
+	                return ret;
+	            };
+	        })();
+	    }
 	}
 
 	/*
@@ -784,7 +1021,8 @@
 
 	    for (var i = 0, l = this.watchers.length; i < l; ++i) {
 	        w = this.watchers[i];
-	        v = w.expr.call(this/* , function err(err, ctx) {} */);
+	        v = w.expr.call(this /* , function err(err, ctx) {} */ );
+	        // console.log('>>> dc:', v);
 	        if (this.valueMap[w.id] !== v) {
 	            w.trigger.call(this, v, w);
 	            this.valueMap[w.id] = v;
@@ -829,6 +1067,7 @@
 	}
 
 	module.exports = enhancer;
+
 
 /***/ },
 /* 10 */

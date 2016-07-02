@@ -32,11 +32,43 @@ function makeExpr(expr) {
     console.log('>>> makeExpr:', expr);
     if (typeof expr === 'string') {
         return tmpl.compile(expr);
-    } else if (typeof expr === 'object') {}
+    } else if (typeof expr === 'object') {
+        // return util.noop;
+        return (function() {
+            var o = {};
+            var ret = {};
+
+            for (var k in expr) {
+                if (expr.hasOwnProperty(k)) {
+                    o[k] = tmpl.compile(expr[k]);
+                }
+            }
+
+            return function() {
+                var temp = {};
+                var hasChange = false;
+
+                for (var k in o) {
+                    temp[k] = o[k].call(this);
+                    if (!hasChange && ret && ret[k] !== temp[k]) {
+                        hasChange = true;
+                    }
+                }
+
+                if (hasChange) {
+                    ret = temp;
+                }
+
+                return ret;
+            };
+        })();
+    }
 }
 
 /*
  * dirty check
+ * dc 是属于component元素自己的，不是全局的
+ * 
  */
 function dc() {
     var w;
@@ -44,10 +76,12 @@ function dc() {
 
     for (var i = 0, l = this.watchers.length; i < l; ++i) {
         w = this.watchers[i];
-        v = w.expr.call(this/* , function err(err, ctx) {} */);
+        v = w.expr.call(this /* , function err(err, ctx) {} */ );
+        // console.log('>>> dc:', v);
         if (this.valueMap[w.id] !== v) {
-            w.trigger.call(this, v, w);
+            // 先设置新值，不然可能会死循环
             this.valueMap[w.id] = v;
+            w.trigger.call(this, v, w);
         }
     }
 }
@@ -76,12 +110,14 @@ function watch(expr, trigger) {
     return buildWatcher(this, expr, makeExpr(expr), trigger);
 }
 
-function enhancer(obj, ori) {
+function enhancer(obj, proto, ori) {
     ori = ori || {};
-    util.extend(obj, {
+    obj && util.extend(obj, {
         valueMap: {},
         watcherMap: util.extend({}, ori.watcherMap),
-        watchers: ori.watchers ? ori.watchers.slice() : [],
+        watchers: ori.watchers ? ori.watchers.slice() : []
+    });
+    proto && util.extend(proto, {
         watch: watch,
         unwatch: unwatch,
         dc: dc
