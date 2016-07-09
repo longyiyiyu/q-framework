@@ -20,6 +20,10 @@ function getInnerHtml(el) {
     return impl.getInnerHtml(el);
 }
 
+function setInnerHtml(el, html) {
+    return impl.setInnerHtml(el, html);
+}
+
 function setText(el, text) {
     return impl.setText(el, text);
 }
@@ -68,10 +72,27 @@ function removeChild(el, n) {
     return impl.removeChild(el, n);
 }
 
+function getClassName(el) {
+    return impl.getClassName(el);
+}
+
+function setClassName(el, nc) {
+    return impl.setClassName(el, nc);
+}
+
+function getStyle(el, key) {
+    return impl.getStyle(el, key);
+}
+
+function setStyle(el, k, v) {
+    return impl.setStyle(el, k, v);
+}
+
 module.exports = {
     getDomTree: getDomTree,
     getDomString: getDomString,
     getInnerHtml: getInnerHtml,
+    setInnerHtml: setInnerHtml,
     setText: setText,
     getNodeType: getNodeType,
     getNodeName: getNodeName,
@@ -83,5 +104,9 @@ module.exports = {
     addClass: addClass,
     removeClass: removeClass,
     replaceChild: replaceChild,
-    removeChild: removeChild
+    removeChild: removeChild,
+    getClassName: getClassName,
+    setClassName: setClassName,
+    getStyle: getStyle,
+    setStyle: setStyle
 };

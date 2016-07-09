@@ -3,18 +3,17 @@ __ENV__ = 'S';
 var should = require('should');
 var dc = require('../../src/core/dc');
 
-var obj = {};
-
-dc(obj);
-
-var trigger = function(v) {
-    this.time++;
-    this.ret = v;
-};
-
-obj.watch('a', trigger);
-
 describe('core/dc', function() {
+    var obj = {};
+    var trigger;
+
+    trigger = function(v) {
+        this.time++;
+        this.ret = v;
+    };
+    dc(obj);
+    obj.watch('a', trigger);
+
     it('should trigger the callback when the value has changed', function() {
         delete obj.a;
         delete obj.ret;

@@ -23,6 +23,9 @@ module.exports = {
     getInnerHtml: function(el) {
         return el.innerHTML;
     },
+    setInnerHtml: function(el, html) {
+        return (el.innerHTML = html);
+    },
     setText: function(el, text) {
         return (el.innerText = text);
     },
@@ -74,5 +77,11 @@ module.exports = {
     },
     removeChild: function(el, n) {
         return el.removeChild(n);
+    },
+    getClassName: function(el) {
+        return el.className;
+    },
+    setClassName: function(el, cn) {
+        el.className = cn;
     }
 };

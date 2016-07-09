@@ -56,7 +56,13 @@
 
 	var Com2 = Q.component('<com2><yield from="p1"></yield><h3 q-text="title"></h3><yield from="p2"></yield></com2>');
 
-	var MyCom2 = Q.component('<myCom2>  <com1 title="title+\' Long! \'" desc="summary" title2="title + \'2\'"><yield to="p1"><p q-text="desc"></p></yield>  <yield to="p2"><com2 title="title+\' try! \'" title2="title2"><yield to="p1"><h1 q-text="\'title: \' + title2"></h1></yield></com2></yield></com1>   <br/><br/>   <h1 q-text="title"></h1><myCom title="title" summary="summary" is-blue="isBlue" is-big="1"></myCom><p q-text="author"></p><MyCom3 title="summary"></MyCom3></myCom2>');
+	var MyCom2 = Q.component('<myCom2>  <com1 title="title+\' Long! \'" html="html" desc="summary" title2="title + \'2\'"><yield to="p1"><p q-html="html"></p></yield>  <yield to="p2"><com2 title="title+\' try! \'" title2="title2"><yield to="p1"><h1 q-text="\'title: \' + title2"></h1></yield></com2></yield></com1>   <br/><br/>   <h1 q-text="title"></h1><myCom title="title" summary="summary" is-blue="isBlue" is-big="1"></myCom><p q-text="author" q-class="{aa:isBlue, bb:0}"></p><MyCom3 title="summary"></MyCom3></myCom2>', {
+	    getDefaultProps: function() {
+	        return {
+	            isBlue: 1
+	        };
+	    }
+	});
 
 	// var c = new MyCom();
 	var c2 = new MyCom2();
@@ -73,13 +79,14 @@
 	c2.update({
 	    title: 'Hello world!',
 	    summary: 'hahahaha',
-	    isBlue: 1,
-	    author: 'long'
+	    author: 'long',
+	    html: '<a href="javascript:" >haha</a>'
 	});
 
 	console.log('after update:', c2, c2.getHtml());
 
 	c2.update({
+	    isBlue: 0,
 	    author: 'jack'
 	});
 
@@ -112,10 +119,13 @@
 	};
 
 	// enhance directive
-	__webpack_require__(2)(Q);
+	__webpack_require__(2)(Q, Q);
 
 	// enhance component
-	__webpack_require__(7)(Q);
+	__webpack_require__(7)(Q, Q);
+
+	// enhance mixin
+	__webpack_require__(11)(Q, Q);
 
 	module.exports = Q;
 
@@ -137,17 +147,29 @@
 	    text: function(v, dom) {
 	        domUtil.setText(dom, v);
 	    },
+	    html: function(v, dom) {
+	        domUtil.setInnerHtml(dom, v);
+	    },
 	    class: function(v, dom) {
-	        // 这里需要优化
-	        console.log('>>> directive class:', v, dom);
+	        var cn;
+	        var tar;
+
 	        if (!v || typeof v !== 'object') return;
+	        cn = ' ' + (domUtil.getClassName(dom) || '') + ' ';
 	        for (var k in v) {
 	            if (v[k]) {
-	                domUtil.addClass(dom, k);
+	                if (cn.indexOf(' ' + k + ' ') < 0) {
+	                    cn += k + ' ';
+	                }
 	            } else {
-	                domUtil.removeClass(dom, k);
+	                tar = ' ' + k + ' ';
+	                while (cn.indexOf(tar) >= 0) {
+	                    cn = cn.replace(tar, ' ');
+	                }
 	            }
 	        }
+
+	        domUtil.setClassName(dom, cn.trim());
 	    },
 	};
 
@@ -157,8 +179,8 @@
 	    return directives[key];
 	}
 
-	function enhancer(obj) {
-	    util.extend(obj, {
+	function enhancer(obj, proto) {
+	    proto && util.extend(proto, {
 	        getDirective: getDirective
 	    });
 	}
@@ -288,6 +310,10 @@
 	    return impl.getInnerHtml(el);
 	}
 
+	function setInnerHtml(el, html) {
+	    return impl.setInnerHtml(el, html);
+	}
+
 	function setText(el, text) {
 	    return impl.setText(el, text);
 	}
@@ -336,10 +362,19 @@
 	    return impl.removeChild(el, n);
 	}
 
+	function getClassName(el) {
+	    return impl.getClassName(el);
+	}
+
+	function setClassName(el, nc) {
+	    return impl.setClassName(el, nc);
+	}
+
 	module.exports = {
 	    getDomTree: getDomTree,
 	    getDomString: getDomString,
 	    getInnerHtml: getInnerHtml,
+	    setInnerHtml: setInnerHtml,
 	    setText: setText,
 	    getNodeType: getNodeType,
 	    getNodeName: getNodeName,
@@ -351,7 +386,9 @@
 	    addClass: addClass,
 	    removeClass: removeClass,
 	    replaceChild: replaceChild,
-	    removeChild: removeChild
+	    removeChild: removeChild,
+	    getClassName: getClassName,
+	    setClassName: setClassName
 	};
 
 
@@ -383,6 +420,9 @@
 	    },
 	    getInnerHtml: function(el) {
 	        return el.innerHTML;
+	    },
+	    setInnerHtml: function(el, html) {
+	        return (el.innerHTML = html);
 	    },
 	    setText: function(el, text) {
 	        return (el.innerText = text);
@@ -435,6 +475,12 @@
 	    },
 	    removeChild: function(el, n) {
 	        return el.removeChild(n);
+	    },
+	    getClassName: function(el) {
+	        return el.className;
+	    },
+	    setClassName: function(el, cn) {
+	        el.className = cn;
 	    }
 	};
 
@@ -472,7 +518,8 @@
 	var util = __webpack_require__(3);
 	var domUtil = __webpack_require__(4);
 	var dc = __webpack_require__(9);
-	var yd = __webpack_require__(10);
+	var ev = __webpack_require__(10);
+	var m = __webpack_require__(11);
 
 	var ID_KEY = 'q-id-p';
 
@@ -483,9 +530,9 @@
 	    // TODO:
 	    // 直接获取 children 的意义并不大
 	    // 应该需要更好的获取 child 的方式
-	    getChildren: function() {
-	        return this.children;
-	    },
+	    // getChildren: function() {
+	    //     return this.children;
+	    // },
 	    // 关于 child 的操作不一定需要
 	    // 先暂时干掉
 	    // addChild: function(c) {
@@ -500,10 +547,24 @@
 	        return domUtil.getDomString(this.root);
 	    },
 	    update: function(props) {
-	        console.log('>>> update:', props);
-	        // 建议只由外部调用
-	        props && util.extend(this, props);
-	        this.dc();
+	        var self = this;
+	        var shouldUpdate;
+
+	        // console.log('>>> update:', props);
+	        this.trigger('update', props);
+	        if (this.shouldComponentUpdate) {
+	            shouldUpdate = this.shouldComponentUpdate(props);
+	        } else {
+	            shouldUpdate = true;
+	        }
+
+	        util.extend(this, props);
+	        if (shouldUpdate) {
+	            this.dc();
+	            setTimeout(function() {
+	                self.trigger('updated');
+	            }, 32);
+	        }
 	    }
 	};
 
@@ -549,10 +610,12 @@
 	 * build component obj from its class
 	 */
 	function buildComponent(C, c) {
-	    dc(c, C);
 	    c._html = C._html;
 	    c.children = [];
 	    c.optMap = {};
+
+	    dc(c, null, C);
+	    ev(c);
 	}
 
 	/*
@@ -566,10 +629,11 @@
 	 * @return  {Class}     component   组件类
 	 * 
 	 */
-	var component = function(html, prototype, statics, css) {
+	var component = function(html, prototype, css) {
 	    var self = this;
 	    var root = domUtil.getDomTree(html)[0];
 	    var comName = domUtil.getNodeName(root);
+	    var temp;
 
 	    console.log('>>> component1:', html, comName);
 
@@ -683,14 +747,21 @@
 	            }
 	        });
 
+	        this.trigger('init');
+
+	        util.extend(this, this.defaultProps);
 	        if (props) {
 	            this.update(props);
 	        }
 	    };
 
 	    // enhance clazz
-	    dc(clazz);
-	    yd(clazz);
+	    dc(null, clazz.prototype);
+	    ev(null, clazz.prototype);
+	    m(null, clazz.prototype);
+
+	    // clazz itself must have capacity of dc
+	    dc(clazz, clazz);
 
 	    // 预处理，和正式处理很像，基本一致
 	    // 不同：正式处理还会处理yield出来的那部分
@@ -728,15 +799,29 @@
 	        }
 	    });
 
-	    // 扩展 prototype
-	    util.extend(clazz.prototype, basePrototype, prototype);
+	    prototype = prototype || {};
 
 	    // 扩展 statics
 	    util.extend(clazz, {
 	        comName: comName,
 	        _html: domUtil.getDomString(root)
-	    }, statics);
+	    }, prototype.statics);
+	    delete prototype.statics;
 
+	    // prototype.getDefaultProps
+	    if (prototype.getDefaultProps && typeof prototype.getDefaultProps === 'function') {
+	        temp = prototype.getDefaultProps();
+	        if (temp && typeof temp === 'object') {
+	            clazz.prototype.defaultProps = temp;
+	        }
+
+	        delete prototype.getDefaultProps;
+	    }
+
+	    // 扩展 prototype
+	    util.extend(clazz.prototype, basePrototype, prototype);
+
+	    // 注册组件
 	    this.setComClass(comName, clazz);
 
 	    console.log('>>> clazz:', clazz, clazz.comName + '1', clazz._html, clazz.watcherMap, clazz.watchers);
@@ -757,8 +842,8 @@
 	    return cache[name.toLowerCase()];
 	}
 
-	function enhancer(obj) {
-	    util.extend(obj, {
+	function enhancer(obj, proto) {
+	    proto && util.extend(proto, {
 	        component: component,
 	        setComClass: setComClass,
 	        getComClass: getComClass
@@ -792,7 +877,7 @@
 	function _tmpl(str, data) {
 	    if (!str) return str; // catch falsy values here
 
-	    return (_cache[str] || (_cache[str] = _create(str))).call(data, _logErr);
+	    return _tmpl.compile(str).call(data, _logErr);
 	}
 
 	_tmpl.compile = function(str) {
@@ -1014,6 +1099,8 @@
 
 	/*
 	 * dirty check
+	 * dc 是属于component元素自己的，不是全局的
+	 * 
 	 */
 	function dc() {
 	    var w;
@@ -1024,8 +1111,9 @@
 	        v = w.expr.call(this /* , function err(err, ctx) {} */ );
 	        // console.log('>>> dc:', v);
 	        if (this.valueMap[w.id] !== v) {
-	            w.trigger.call(this, v, w);
+	            // 先设置新值，不然可能会死循环
 	            this.valueMap[w.id] = v;
+	            w.trigger.call(this, v, w);
 	        }
 	    }
 	}
@@ -1054,12 +1142,14 @@
 	    return buildWatcher(this, expr, makeExpr(expr), trigger);
 	}
 
-	function enhancer(obj, ori) {
+	function enhancer(obj, proto, ori) {
 	    ori = ori || {};
-	    util.extend(obj, {
+	    obj && util.extend(obj, {
 	        valueMap: {},
 	        watcherMap: util.extend({}, ori.watcherMap),
-	        watchers: ori.watchers ? ori.watchers.slice() : [],
+	        watchers: ori.watchers ? ori.watchers.slice() : []
+	    });
+	    proto && util.extend(proto, {
 	        watch: watch,
 	        unwatch: unwatch,
 	        dc: dc
@@ -1073,31 +1163,278 @@
 /* 10 */
 /***/ function(module, exports, __webpack_require__) {
 
-	
 	/**
-	 * yield.js
-	 * about processing yield blocks
+	 * event.js
+	 * the functions of event
 	 * @author  longyiyiyu
 	 * 
 	 */
 
 	var util = __webpack_require__(3);
-	var domUtil = __webpack_require__(4);
 
-	function setYield(dom) {
-	    var f = domUtil.getAttribute(dom, 'from');
+	/**
+	 * Helper function needed to get and loop all the events in a string
+	 * @param   { String }   events     事件类型
+	 * @param   {Function}   fn(t, ns)  callback
+	 * @param   { String }   fn.t       事件类型
+	 * @param   { String }   fn.ns      命名空间
+	 * 
+	 */
+	function onEachEvent(events, fn) {
+	    var es;
+	    var name;
+	    var indx;
 
-	    this.yieldMap[f] = this.yieldMap[f] || dom;
+	    if (!events || typeof events !== 'string') {
+	        return;
+	    }
+
+	    es = events.trim().split(' ');
+	    for (var i = 0, l = es.length; i < l; i++) {
+	        name = es[i];
+	        indx = name.indexOf('.');
+	        if (name) {
+	            fn((~indx ? name.substring(0, indx) : name).trim(), (~indx ? name.slice(indx + 1).trim() : null));
+	        }
+	    }
 	}
 
-	function enhancer(obj) {
-	    util.extend(obj, {
-	        yieldMap: {},
-	        setYield: setYield
+	/*
+	 * 注册事件
+	 * @param   { String }  events  事件类型，支持多事件与命名空间，比如：'a.ns1 b.ns1'
+	 * @param   {Function}  cb      事件回调
+	 * @return  { Object }  this
+	 *
+	 * 注意，在注册事件回调的时候，命名空间要一致
+	 * 一个cb只能属于一个命名空间，如果出现多个命名空间，将可能出现你不想要的结果
+	 * 
+	 */
+	function on(events, cb) {
+	    var self = this;
+
+	    if (typeof cb != 'function') return this;
+	    onEachEvent(events, function(t, ns) {
+	        if (t === '*') return; // 不支持 '*' 类型
+	        (self.events[t] = self.events[t] || []).push(cb);
+	        cb.ns = ns;
+	    });
+
+	    return this;
+	}
+
+	/*
+	 * 解绑事件回调的辅助函数
+	 * @param   { Array  }  arr     回调数组
+	 * @param   {Function}  [cb]    事件回调
+	 * @param   { String }  [ns]    命名空间
+	 * 
+	 */
+	function removeCB(arr, cb, ns) {
+	    if (!arr) return;
+	    for (var i = 0, fn; fn = arr[i]; ++i) {
+	        if (cb === fn || ns && fn.ns === ns) {
+	            arr.splice(i--, 1);
+	        }
+	    }
+	}
+
+	/*
+	 * 解绑事件
+	 * @param   { String }  events  事件类型，支持多事件，命名空间 + '*'，比如：'a b', '*.ns3'
+	 * @param   {Function}  [cb]    事件回调，如果不提供cb，则删除事件类型的所有回调
+	 * @return  { Object }  this
+	 * 
+	 */
+	function off(events, cb) {
+	    var self = this;
+	    var arr;
+
+	    if (!events || typeof events !== 'string') return;
+	    if (events.trim() === '*' && !cb) this.events = {}; // 快速处理特殊情况
+	    else {
+	        onEachEvent(events, function(t, ns) {
+	            if (t === '*') {
+	                for (var k in self.events) {
+	                    removeCB(self.events[k], cb, ns);
+	                }
+	            } else {
+	                if (!ns && !cb) self.events[t] = []; // 快速处理特殊情况
+	                else removeCB(self.events[t], cb, ns);
+	            }
+	        });
+	    }
+
+	    return this;
+	}
+
+	/*
+	 * 注册一次性事件
+	 * @param   { String }  events  事件类型，支持多事件与命名空间，比如：'a.ns1 b.ns1'
+	 * @param   {Function}  cb      事件回调
+	 * @return  { Object }  this
+	 * 
+	 */
+	function one(events, cb) {
+	    var self = this;
+
+	    onEachEvent(events, function(t, ns) {
+	        var es = t + (ns ? '.' + ns : '');
+	        var f = function() {
+	            self.off(es, f);
+	            cb.apply(self, arguments);
+	        };
+
+	        self.on(es, f);
+	    });
+
+	    return this;
+	}
+
+	/*
+	 * 触发事件
+	 * @param   {String}    events      事件类型，支持多事件，比如：'a b'
+	 * @param   {*}         [args...]   事件回调的参数
+	 * @return  {Object}    this
+	 * 
+	 */
+	function trigger(events) {
+	    var self = this;
+	    var arglen = arguments.length;
+	    var args = new Array(arglen);
+	    var fns;
+
+	    for (var i = 1; i < arglen; i++) {
+	        args[i] = arguments[i];
+	    }
+
+	    onEachEvent(events, function(t, ns) {
+	        fns = (self.events[t] || []).slice(0);
+	        args[0] = {
+	            type: t
+	        };
+	        for (var i = 0, fn; fn = fns[i]; ++i) {
+	            fn.apply(self, args);
+	            if (fns[i] !== fn) { // for one time function
+	                i--;
+	            }
+	        }
+	    });
+
+	    return this;
+	}
+
+	function enhancer(obj, proto) {
+	    obj && util.extend(obj, {
+	        events: {}
+	    });
+
+	    proto && util.extend(proto, {
+	        on: on,
+	        off: off,
+	        one: one,
+	        trigger: trigger
 	    });
 	}
 
 	module.exports = enhancer;
+
+
+/***/ },
+/* 11 */
+/***/ function(module, exports, __webpack_require__) {
+
+	/**
+	 * mixin.js
+	 * the functions of mixin
+	 * @author  longyiyiyu
+	 * 
+	 */
+
+	var util = __webpack_require__(3);
+	var cache = {};
+
+	/*
+	 * mixin 
+	 * main function for exports
+	 * @param   {String}            name        name of mixin
+	 * @param   {Object|Function}   m           mixin
+	 *
+	 * @example
+	 *
+	 * // set the mixin
+	 * obj.mixin('a', mix);
+	 *
+	 * // use the mix of 'a'
+	 * obj.mixin('a');
+	 *
+	 * // use function as mix
+	 * obj.mixin(function() {});
+	 *
+	 * // use object as mix
+	 * obj.mixin({});
+	 *
+	 * // use some mixin
+	 * obj.mixin(['a', function() {}, {}]);
+	 * 
+	 */
+	function mixin(name, m) {
+	    if (typeof name !== 'string') {
+	        m = name;
+	        name = null;
+	    }
+
+	    if (name && m) { // set
+	        if (typeof m === 'object' || typeof m === 'function') {
+	            cache[name] = m;
+	        }
+	        return this;
+	    }
+
+	    if (!m && typeof name === 'string') {
+	        m = cache[name];
+	    }
+
+	    if (!m) {
+	        return this;
+	    }
+
+	    if (!(m instanceof Array)) {
+	        m = [m];
+	    }
+
+	    var mix;
+
+	    for (var i = 0, l = m.length; i < l; ++i) {
+	        mix = m[i];
+	        if (typeof mix === 'string') {
+	            mix = cache[mix];
+	        }
+
+	        if (mix) {
+	            if (typeof mix === 'object') {
+	                if (mix.init) {
+	                    mix.init(this);
+	                    delete mix.init;
+	                }
+
+	                util.extend(this, mix);
+	            } else if (typeof mix === 'function') {
+	                mix(this);
+	            }
+	        }
+	    }
+
+	    return this;
+	}
+
+	function enhancer(obj, proto) {
+	    proto && util.extend(proto, {
+	        mixin: mixin
+	    });
+	}
+
+	module.exports = enhancer;
+
 
 /***/ }
 /******/ ]);

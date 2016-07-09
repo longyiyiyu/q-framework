@@ -9,6 +9,8 @@ var tmpl = require('../lib/tmpl');
 var util = require('../lib/util');
 var domUtil = require('./dom');
 var dc = require('./dc');
+var ev = require('./event');
+var m = require('./mixin');
 
 var ID_KEY = 'q-id-p';
 
@@ -19,9 +21,9 @@ var basePrototype = {
     // TODO:
     // 直接获取 children 的意义并不大
     // 应该需要更好的获取 child 的方式
-    getChildren: function() {
-        return this.children;
-    },
+    // getChildren: function() {
+    //     return this.children;
+    // },
     // 关于 child 的操作不一定需要
     // 先暂时干掉
     // addChild: function(c) {
@@ -36,10 +38,24 @@ var basePrototype = {
         return domUtil.getDomString(this.root);
     },
     update: function(props) {
-        console.log('>>> update:', props);
-        // 建议只由外部调用
-        props && util.extend(this, props);
-        this.dc();
+        var self = this;
+        var shouldUpdate;
+
+        // console.log('>>> update:', props);
+        this.trigger('update', props);
+        if (this.shouldComponentUpdate) {
+            shouldUpdate = this.shouldComponentUpdate(props);
+        } else {
+            shouldUpdate = true;
+        }
+
+        util.extend(this, props);
+        if (shouldUpdate) {
+            this.dc();
+            setTimeout(function() {
+                self.trigger('updated');
+            }, 32);
+        }
     }
 };
 
@@ -85,10 +101,12 @@ function getPropsObj(dom) {
  * build component obj from its class
  */
 function buildComponent(C, c) {
-    dc(c, null, C);
     c._html = C._html;
     c.children = [];
     c.optMap = {};
+
+    dc(c, null, C);
+    ev(c);
 }
 
 /*
@@ -102,10 +120,11 @@ function buildComponent(C, c) {
  * @return  {Class}     component   组件类
  * 
  */
-var component = function(html, prototype, statics, css) {
+var component = function(html, prototype, css) {
     var self = this;
     var root = domUtil.getDomTree(html)[0];
     var comName = domUtil.getNodeName(root);
+    var temp;
 
     console.log('>>> component1:', html, comName);
 
@@ -219,6 +238,9 @@ var component = function(html, prototype, statics, css) {
             }
         });
 
+        this.trigger('init');
+
+        util.extend(this, this.defaultProps);
         if (props) {
             this.update(props);
         }
@@ -226,6 +248,8 @@ var component = function(html, prototype, statics, css) {
 
     // enhance clazz
     dc(null, clazz.prototype);
+    ev(null, clazz.prototype);
+    m(null, clazz.prototype);
 
     // clazz itself must have capacity of dc
     dc(clazz, clazz);
@@ -266,15 +290,29 @@ var component = function(html, prototype, statics, css) {
         }
     });
 
-    // 扩展 prototype
-    util.extend(clazz.prototype, basePrototype, prototype);
+    prototype = prototype || {};
 
     // 扩展 statics
     util.extend(clazz, {
         comName: comName,
         _html: domUtil.getDomString(root)
-    }, statics);
+    }, prototype.statics);
+    delete prototype.statics;
 
+    // prototype.getDefaultProps
+    if (prototype.getDefaultProps && typeof prototype.getDefaultProps === 'function') {
+        temp = prototype.getDefaultProps();
+        if (temp && typeof temp === 'object') {
+            clazz.prototype.defaultProps = temp;
+        }
+
+        delete prototype.getDefaultProps;
+    }
+
+    // 扩展 prototype
+    util.extend(clazz.prototype, basePrototype, prototype);
+
+    // 注册组件
     this.setComClass(comName, clazz);
 
     console.log('>>> clazz:', clazz, clazz.comName + '1', clazz._html, clazz.watcherMap, clazz.watchers);

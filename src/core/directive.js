@@ -12,18 +12,34 @@ var directives = {
     text: function(v, dom) {
         domUtil.setText(dom, v);
     },
+    html: function(v, dom) {
+        domUtil.setInnerHtml(dom, v);
+    },
     class: function(v, dom) {
-        // 这里需要优化
-        console.log('>>> directive class:', v, dom);
+        var cn;
+        var tar;
+
         if (!v || typeof v !== 'object') return;
+        cn = ' ' + (domUtil.getClassName(dom) || '') + ' ';
         for (var k in v) {
             if (v[k]) {
-                domUtil.addClass(dom, k);
+                if (cn.indexOf(' ' + k + ' ') < 0) {
+                    cn += k + ' ';
+                }
             } else {
-                domUtil.removeClass(dom, k);
+                tar = ' ' + k + ' ';
+                while (cn.indexOf(tar) >= 0) {
+                    cn = cn.replace(tar, ' ');
+                }
             }
         }
+
+        domUtil.setClassName(dom, cn.trim());
     },
+    attr: function(v, dom) {
+        if (v === undefined) return;
+
+    }
 };
 
 function getDirective(key) {

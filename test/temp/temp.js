@@ -10,7 +10,13 @@ var Com1 = Q.component('<com1><yield from="p1"></yield><h2 q-text="title"></h2><
 
 var Com2 = Q.component('<com2><yield from="p1"></yield><h3 q-text="title"></h3><yield from="p2"></yield></com2>');
 
-var MyCom2 = Q.component('<myCom2>  <com1 title="title+\' Long! \'" desc="summary" title2="title + \'2\'"><yield to="p1"><p q-text="desc"></p></yield>  <yield to="p2"><com2 title="title+\' try! \'" title2="title2"><yield to="p1"><h1 q-text="\'title: \' + title2"></h1></yield></com2></yield></com1>   <br/><br/>   <h1 q-text="title"></h1><myCom title="title" summary="summary" is-blue="isBlue" is-big="1"></myCom><p q-text="author"></p><MyCom3 title="summary"></MyCom3></myCom2>');
+var MyCom2 = Q.component('<myCom2>  <com1 title="title+\' Long! \'" html="html" desc="summary" title2="title + \'2\'"><yield to="p1"><p q-html="html"></p></yield>  <yield to="p2"><com2 title="title+\' try! \'" title2="title2"><yield to="p1"><h1 q-text="\'title: \' + title2"></h1></yield></com2></yield></com1>   <br/><br/>   <h1 q-text="title"></h1><myCom title="title" summary="summary" is-blue="isBlue" is-big="1"></myCom><p q-text="author" q-class="{aa:isBlue, bb:0}"></p><MyCom3 title="summary"></MyCom3></myCom2>', {
+    getDefaultProps: function() {
+        return {
+            isBlue: 1
+        };
+    }
+});
 
 // var c = new MyCom();
 var c2 = new MyCom2();
@@ -27,13 +33,14 @@ console.log('new com:', c2);
 c2.update({
     title: 'Hello world!',
     summary: 'hahahaha',
-    isBlue: 1,
-    author: 'long'
+    author: 'long',
+    html: '<a href="javascript:" >haha</a>'
 });
 
 console.log('after update:', c2, c2.getHtml());
 
 c2.update({
+    isBlue: 0,
     author: 'jack'
 });
 

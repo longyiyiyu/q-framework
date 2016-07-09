@@ -29,14 +29,14 @@ function onEachEvent(events, fn) {
         name = es[i];
         indx = name.indexOf('.');
         if (name) {
-            fn((~indx ? name.substring(0, indx) : name).trim(), (~indx ? name.slice(indx + 1) : null).trim());
+            fn((~indx ? name.substring(0, indx) : name).trim(), (~indx ? name.slice(indx + 1).trim() : null));
         }
     }
 }
 
 /*
  * 注册事件
- * @param   { String }  events  事件类型，支持多事件与命名空间，比如：'a.ns1 b.ns2'
+ * @param   { String }  events  事件类型，支持多事件与命名空间，比如：'a.ns1 b.ns1'
  * @param   {Function}  cb      事件回调
  * @return  { Object }  this
  *
@@ -50,7 +50,7 @@ function on(events, cb) {
     if (typeof cb != 'function') return this;
     onEachEvent(events, function(t, ns) {
         if (t === '*') return; // 不支持 '*' 类型
-        (self.events[name] = self.events[name] || []).push(cb);
+        (self.events[t] = self.events[t] || []).push(cb);
         cb.ns = ns;
     });
 
@@ -65,8 +65,9 @@ function on(events, cb) {
  * 
  */
 function removeCB(arr, cb, ns) {
+    if (!arr) return;
     for (var i = 0, fn; fn = arr[i]; ++i) {
-        if (cb === fn || fn.ns === ns) {
+        if (cb === fn || ns && fn.ns === ns) {
             arr.splice(i--, 1);
         }
     }
@@ -103,12 +104,24 @@ function off(events, cb) {
 
 /*
  * 注册一次性事件
- * @param   { String }  events  事件类型，支持多事件与命名空间，比如：'a.ns1 b.ns2'
+ * @param   { String }  events  事件类型，支持多事件与命名空间，比如：'a.ns1 b.ns1'
  * @param   {Function}  cb      事件回调
  * @return  { Object }  this
  * 
  */
 function one(events, cb) {
+    var self = this;
+
+    onEachEvent(events, function(t, ns) {
+        var es = t + (ns ? '.' + ns : '');
+        var f = function() {
+            self.off(es, f);
+            cb.apply(self, arguments);
+        };
+
+        self.on(es, f);
+    });
+
     return this;
 }
 
@@ -130,13 +143,15 @@ function trigger(events) {
     }
 
     onEachEvent(events, function(t, ns) {
-        fns = self.events[t];
-        if (!fns) return;
+        fns = (self.events[t] || []).slice(0);
         args[0] = {
             type: t
         };
-        for (var i = 0, l = fns.length; i < l; ++i) {
-            fns[i].apply(this, args);
+        for (var i = 0, fn; fn = fns[i]; ++i) {
+            fn.apply(self, args);
+            if (fns[i] !== fn) { // for one time function
+                i--;
+            }
         }
     });
 
