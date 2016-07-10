@@ -23,6 +23,7 @@
   "homepage": "https://github.com/longyiyiyu/q-framework#readme",
   "devDependencies": {
     "should": "^8.4.0",
+    "should-sinon": "0.0.5",
     "sinon": "^1.17.4",
     "webpack": "^1.13.1"
   }

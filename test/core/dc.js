@@ -11,7 +11,7 @@ describe('core/dc', function() {
         this.time++;
         this.ret = v;
     };
-    dc(obj);
+    dc(obj, obj);
     obj.watch('a', trigger);
 
     it('should trigger the callback when the value has changed', function() {
@@ -37,7 +37,7 @@ describe('core/dc', function() {
 
     it('should work when there is not any watcher', function() {
         var o = {};
-        dc(o);
+        dc(o, o);
 
         (function() {
             o.dc();
