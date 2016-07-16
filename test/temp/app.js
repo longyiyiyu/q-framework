@@ -56,7 +56,7 @@
 
 	var Com2 = Q.component('<com2><yield from="p1"></yield><h3 q-text="title"></h3><yield from="p2"></yield></com2>');
 
-	var MyCom2 = Q.component('<myCom2>  <com1 title="title+\' Long! \'" html="html" desc="summary" title2="title + \'2\'"><yield to="p1"><p q-html="html"></p></yield>  <yield to="p2"><com2 title="title+\' try! \'" title2="title2"><yield to="p1"><h1 q-text="\'title: \' + title2"></h1></yield></com2></yield></com1>   <br/><br/>   <h1 q-text="title"></h1><myCom title="title" summary="summary" is-blue="isBlue" is-big="1"></myCom><p q-text="author" q-class="{aa:isBlue, bb:0}"></p><MyCom3 title="summary"></MyCom3></myCom2>', {
+	var MyCom2 = Q.component('<myCom2>  <com1 q-if="!ifValue" title="title+\' Long! \'" html="html" desc="summary" title2="title + \'2\'"><yield to="p1"><p q-html="html"></p></yield>  <yield to="p2"><com2 title="title+\' try! \'" title2="title2"><yield to="p1"><h1 q-text="\'title: \' + title2"></h1></yield></com2></yield></com1>   <br/><br/>   <h1 q-text="title"></h1><myCom title="title" summary="summary" is-blue="isBlue" is-big="1"></myCom><p q-text="author" q-class="{aa:isBlue, bb:0}"></p><MyCom3 title="summary"></MyCom3>  <br/><br/>  <p q-attr="attrs">aaa</p> <p q-css="attrs.style">aaabbb</p>  <p q-show="isShow">aaabbbccc</p> <input type="checkbox" q-value="isCheck">isCheck</input> <input type="text" q-value="textValue"></input> <a href="javascript:" q-on="aEvents">test directive on</a>  <p q-if="ifValue">if this is true!</p><p q-if="!ifValue">if this is false!</p> </myCom2>', {
 	    getDefaultProps: function() {
 	        return {
 	            isBlue: 1
@@ -76,11 +76,30 @@
 	//     isBlue: 1
 	// });
 
+	var testFun = function(e) {
+	    console.log('>>> testFun:', e.type, e, this);
+	};
+
 	c2.update({
 	    title: 'Hello world!',
 	    summary: 'hahahaha',
 	    author: 'long',
-	    html: '<a href="javascript:" >haha</a>'
+	    html: '<a href="javascript:" >haha</a>',
+	    attrs: {
+	        style: {
+	            'background-color': 'green',
+	            color: 'red'
+	        },
+	        'data-id': 'abc'
+	    },
+	    isShow: false,
+	    isCheck: true,
+	    textValue: '',
+	    aEvents: {
+	        click: testFun,
+	        mousedown: testFun
+	    },
+	    ifValue: 1
 	});
 
 	console.log('after update:', c2, c2.getHtml());
@@ -95,6 +114,16 @@
 	c2.update({
 	    title: 'Hello world!!!'
 	});
+
+	setTimeout(function() {
+	    c2.update({
+	        title: 'aaaa Hello world!',
+	        isShow: true,
+	        isCheck: false,
+	        textValue: 'Hello',
+	        ifValue: 0
+	    });
+	}, 1000);
 
 	window.onload = function() {
 	    document.getElementById('test').appendChild(c2.getDom());
@@ -143,6 +172,7 @@
 	var util = __webpack_require__(3);
 	var domUtil = __webpack_require__(4);
 
+	var qIfKey = 'qIf';
 	var directives = {
 	    text: function(v, dom) {
 	        domUtil.setText(dom, v);
@@ -150,7 +180,7 @@
 	    html: function(v, dom) {
 	        domUtil.setInnerHtml(dom, v);
 	    },
-	    class: function(v, dom) {
+	    'class': function(v, dom) {
 	        var cn;
 	        var tar;
 
@@ -171,6 +201,118 @@
 
 	        domUtil.setClassName(dom, cn.trim());
 	    },
+	    attr: function(v, dom) {
+	        if (v === undefined || typeof v !== 'object') return;
+	        for (var k in v) {
+	            if (v.hasOwnProperty(k)) {
+	                if (k === 'style') {
+	                    for (var key in v[k]) {
+	                        if (v[k].hasOwnProperty(key)) {
+	                            domUtil.setStyle(dom, util.camelize(key), v[k][key]);
+	                        }
+	                    }
+	                } else if (k in dom) {
+	                    dom[k] = v;
+	                } else {
+	                    domUtil.setAttribute(dom, k, v[k]);
+	                }
+	            }
+	        }
+	    },
+	    css: function(v, dom) {
+	        if (v === undefined || typeof v !== 'object') return;
+	        for (var key in v) {
+	            if (v.hasOwnProperty(key)) {
+	                domUtil.setStyle(dom, util.camelize(key), v[key]);
+	            }
+	        }
+	    },
+	    show: function(v, dom) {
+	        var dis;
+
+	        if (v) {
+	            domUtil.setStyle(dom, 'display', '');
+	            dis = domUtil.getStyle(dom, 'display');
+	            if (dis === 'none') {
+	                domUtil.setStyle(dom, 'display', 'block');
+	            }
+	        } else {
+	            domUtil.setStyle(dom, 'display', 'none');
+	        }
+	    },
+	    value: function(v, dom) {
+	        domUtil.setValue(dom, v);
+	    },
+	    on: function(v, dom) {
+	        var self = this;
+
+	        if (!v || typeof v !== 'object') return;
+
+	        // use redux will often enter here
+	        // don't bind many events!
+	        // there is not need to figure this problem, just use the first value;
+	        if (dom.__Q__hasBindEvents) {
+	            return;
+	        }
+
+	        for (var k in v) {
+	            if (v.hasOwnProperty(k)) {
+	                if (typeof v[k] === 'function') {
+	                    // TODO: add the capacity of useCapture argument
+	                    domUtil.addEventListener(dom, k, function(e) {
+	                        v[k].call(self, e);
+	                    }, false);
+	                }
+	            }
+	        }
+
+	        dom.__Q__hasBindEvents = 1;
+	    },
+	    'if': function(v, dom, w) {
+	        var data = this.optMap[w.id];
+	        var value = !!v;
+	        var parent;
+
+	        if (!data.ref) {
+	            data.ref = document.createComment('q-if');
+	            data.if_value = true;
+	        }
+
+	        if (value === data.if_value) {
+	            return;
+	        }
+
+	        if (value) {
+	            parent = domUtil.getParentNode(data.ref);
+	            parent && domUtil.replaceChild(parent, dom, data.ref);
+	            data.if_value = true;
+	        } else {
+	            parent = domUtil.getParentNode(dom);
+	            parent && domUtil.replaceChild(parent, data.ref, dom);
+	            data.if_value = false;
+	        }
+	    },
+	    // special for component
+	    child: function(np, w) {
+	        // console.log('>>> directive child:', np);
+	        var el = this.optMap[w.id].el;
+
+
+	        if (qIfKey in np) {
+	            directives['if'].call(this, np[qIfKey], el.getDom(), w);
+	        }
+
+	        if (qIfKey in np || qIfKey in el) {
+	            // 有 q-if 的组件
+	            el.update(np, false);
+	            if (!!np[qIfKey] || !!el[qIfKey]) {
+	                // 如果组件在 dom tree，则更新组件
+	                el.update(null, true);
+	            }
+	        } else {
+	            el.update(np);
+	        }
+	    }
 	};
 
 	function getDirective(key) {
@@ -262,9 +404,9 @@
 	    return target;
 	}
 
-	function getKeyFromDomProp(key) {
-	    return key.replace(/-([a-zA-Z])/g, function(m, letter) {
-	        return letter.toUpperCase();
+	function camelize(str) {
+	    return str.replace(/-+(.)?/g, function(match, chr) {
+	        return chr ? chr.toUpperCase() : '';
 	    });
 	}
 
@@ -280,7 +422,7 @@
 	    retFalse: function() {
 	        return false;
 	    },
-	    getKeyFromDomProp: getKeyFromDomProp
+	    camelize: camelize
 	};
 
 
@@ -370,6 +512,22 @@
 	    return impl.setClassName(el, nc);
 	}
 
+	function getStyle(el, key) {
+	    return impl.getStyle(el, key);
+	}
+
+	function setStyle(el, k, v) {
+	    return impl.setStyle(el, k, v);
+	}
+
+	function setValue(el, v) {
+	    return impl.setValue(el, v);
+	}
+
+	function addEventListener(el, type, cb, useCapture) {
+	    return impl.addEventListener(el, type, cb, useCapture);
+	}
+
 	module.exports = {
 	    getDomTree: getDomTree,
 	    getDomString: getDomString,
@@ -388,7 +546,11 @@
 	    replaceChild: replaceChild,
 	    removeChild: removeChild,
 	    getClassName: getClassName,
-	    setClassName: setClassName
+	    setClassName: setClassName,
+	    getStyle: getStyle,
+	    setStyle: setStyle,
+	    setValue: setValue,
+	    addEventListener: addEventListener
 	};
 
 
@@ -399,7 +561,6 @@
 	var div = document.createElement('div');
 	var singleTagRE = /^<(\w+)\s*\/?>(?:<\/\1>|)$/;
 	var _slice = [].slice;
-
 
 	module.exports = {
 	    getDomTree: function(html) {
@@ -481,7 +642,25 @@
 	    },
 	    setClassName: function(el, cn) {
 	        el.className = cn;
-	    }
+	    },
+	    getStyle: function(el, k) {
+	        return el.currentStyle ?
+	            el.currentStyle[k] :
+	            getComputedStyle(el, null)[k];
+	    },
+	    setStyle: function(el, k, v) {
+	        el.style[k] = v;
+	    },
+	    setValue: function(el, v) {
+	        if (el.type === 'checkbox') {
+	            el.checked = !!v;
+	        } else {
+	            el.value = v;
+	        }
+	    },
+	    addEventListener: function(el, type, cb, useCapture) {
+	        el.addEventListener(type, cb, useCapture);
+	    },
 	};
 
 
@@ -546,16 +725,22 @@
 	    getHtml: function() {
 	        return domUtil.getDomString(this.root);
 	    },
-	    update: function(props) {
+	    update: function(props, should) {
 	        var self = this;
 	        var shouldUpdate;
 
 	        // console.log('>>> update:', props);
 	        this.trigger('update', props);
-	        if (this.shouldComponentUpdate) {
-	            shouldUpdate = this.shouldComponentUpdate(props);
-	        } else {
+	        if (should === true) {
 	            shouldUpdate = true;
+	        } else if (should === false) {
+	            shouldUpdate = false;
+	        } else {
+	            if (this.shouldComponentUpdate) {
+	                shouldUpdate = this.shouldComponentUpdate(props);
+	            } else {
+	                shouldUpdate = true;
+	            }
 	        }
 
 	        util.extend(this, props);
@@ -600,7 +785,7 @@
 
 	    util.scan(dom, function(k, v) {
 	        r = true;
-	        ret[util.getKeyFromDomProp(k)] = v;
+	        ret[util.camelize(k)] = v;
 	    }, util.retTrue);
 
 	    return r ? ret : null;
@@ -707,9 +892,7 @@
 	                        } else {
 	                            p = getPropsObj(dom);
 	                            if (p) {
-	                                id = that.watch(p, function(np, w) {
-	                                    this.optMap[w.id].el.update(np);
-	                                });
+	                                id = that.watch(p, self.getDirective('child'));
 	                            }
 	                        }
 
@@ -734,7 +917,7 @@
 	                        } else {
 	                            util.scan(dom, function(k, v) {
 	                                var id = that.watch(v, function(nv, w) {
-	                                    self.getDirective(k).call(this, nv, this.optMap[w.id].el);
+	                                    self.getDirective(k).call(this, nv, this.optMap[w.id].el, w);
 	                                });
 
 	                                that.optMap[id] = {
@@ -780,9 +963,7 @@
 	            if (C) {
 	                p = getPropsObj(dom);
 	                if (p) {
-	                    ids.push(clazz.watch(p, function(np, w) {
-	                        this.optMap[w.id].el.update(np);
-	                    }));
+	                    ids.push(clazz.watch(p, self.getDirective('child')));
 	                }
 
 	                domUtil.setAttribute(dom, ID_KEY, ids.length ? JSON.stringify(ids) : 1);
@@ -790,7 +971,7 @@
 	            } else {
 	                util.scan(dom, function(k, v) {
 	                    ids.push(clazz.watch(v, function(nv, w) {
-	                        self.getDirective(k).call(this, nv, this.optMap[w.id].el);
+	                        self.getDirective(k).call(this, nv, this.optMap[w.id].el, w);
 	                    }));
 	                });
 	            }

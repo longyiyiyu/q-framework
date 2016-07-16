@@ -2,7 +2,6 @@ var div = document.createElement('div');
 var singleTagRE = /^<(\w+)\s*\/?>(?:<\/\1>|)$/;
 var _slice = [].slice;
 
-
 module.exports = {
     getDomTree: function(html) {
         var dom;
@@ -83,5 +82,23 @@ module.exports = {
     },
     setClassName: function(el, cn) {
         el.className = cn;
-    }
+    },
+    getStyle: function(el, k) {
+        return el.currentStyle ?
+            el.currentStyle[k] :
+            getComputedStyle(el, null)[k];
+    },
+    setStyle: function(el, k, v) {
+        el.style[k] = v;
+    },
+    setValue: function(el, v) {
+        if (el.type === 'checkbox') {
+            el.checked = !!v;
+        } else {
+            el.value = v;
+        }
+    },
+    addEventListener: function(el, type, cb, useCapture) {
+        el.addEventListener(type, cb, useCapture);
+    },
 };

@@ -88,6 +88,14 @@ function setStyle(el, k, v) {
     return impl.setStyle(el, k, v);
 }
 
+function setValue(el, v) {
+    return impl.setValue(el, v);
+}
+
+function addEventListener(el, type, cb, useCapture) {
+    return impl.addEventListener(el, type, cb, useCapture);
+}
+
 module.exports = {
     getDomTree: getDomTree,
     getDomString: getDomString,
@@ -108,5 +116,7 @@ module.exports = {
     getClassName: getClassName,
     setClassName: setClassName,
     getStyle: getStyle,
-    setStyle: setStyle
+    setStyle: setStyle,
+    setValue: setValue,
+    addEventListener: addEventListener
 };

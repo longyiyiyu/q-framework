@@ -4,57 +4,120 @@ var should = require('should');
 var util = require('../../src/lib/util');
 
 describe('lib/util', function() {
+    var patchesObj;
+    var key = 'id';
+    var keyFun = function(item) {
+        return item.id;
+    };
 
-    describe('replaceYields', function() {
-        it('should return "" when then input is empty string', function() {
-            util.replaceYields('').should.be.eql('');
+    describe('@listDiff', function() {
+        it('should return empty patches when the inputs are empty array', function() {
+            patchesObj = util.listDiff([], []);
+
+            patchesObj.patches.should.have.length(0);
         });
 
-        it('should return the same input when the input is not a string', function() {
-            util.replaceYields(11).should.be.eql(11);
-            util.replaceYields({
-                aa: 1
-            }).should.be.eql({
-                aa: 1
-            });
-            util.replaceYields([1, 2]).should.be.eql([1, 2]);
+        it('should remove all items when they are has not key', function() {
+            var o = [1, 2, 3];
+            patchesObj = util.listDiff(o, []);
+
+            // console.log('>>> patchesObj:', patchesObj);
+            patchesObj.patches.should.be.eql([{
+                index: 0,
+                type: 0
+            }, {
+                index: 0,
+                type: 0
+            }, {
+                index: 0,
+                type: 0
+            }]);
         });
 
-        it('should return the same input when there is not any replacement', function() {
-            util.replaceYields('<h1></h1>').should.be.eql('<h1></h1>');
+        it('should insert all items when they are has not key', function() {
+            var n = [1, 2, 3];
+            patchesObj = util.listDiff([], n);
+
+            // console.log('>>> patchesObj:', patchesObj);
+            patchesObj.patches.should.be.eql([{
+                index: 0,
+                item: 1,
+                type: 1
+            }, {
+                index: 1,
+                item: 2,
+                type: 1
+            }, {
+                index: 2,
+                item: 3,
+                type: 1
+            }]);
         });
 
-        it('should replace the yield blocks by their names', function() {
-            util.replaceYields('<div><yield from="title"></yield></div>', '<yield to="title"><h1>Hello world</h1></yield>')
-                .should.be.eql('<div><h1>Hello world</h1></div>');
+        it('should use the string to find the key', function() {
+            patchesObj = util.listDiff([{
+                id: 1,
+                v: 1
+            }], [{
+                id: 1,
+                v: 2
+            }], key);
 
-            util.replaceYields('<div><yield from="title"></yield><p>Hi</p><yield from="desc"></yield></div>', '<yield to="title"><h1>Hello world</h1></yield><yield to="desc"><p>I\'m longyiyiyu.</p></yield>')
-                .should.be.eql('<div><h1>Hello world</h1><p>Hi</p><p>I\'m longyiyiyu.</p></div>');
+            patchesObj.patches.should.have.length(0);
         });
 
-        it('should be ok when some named yield blocks has not be replaced and they will not be outputted', function() {
-            util.replaceYields('<div><yield from="title"></yield><p>Hi</p><yield from="desc"></yield></div>', '<yield to="title"><h1>Hello world</h1></yield>')
-                .should.be.eql('<div><h1>Hello world</h1><p>Hi</p></div>');
+        it('should use the function to find the key', function() {
+            patchesObj = util.listDiff([{
+                id: 1,
+                v: 1
+            }], [{
+                id: 1,
+                v: 2
+            }], keyFun);
+
+            patchesObj.patches.should.have.length(0);
         });
 
-        it('should be ok when the named yield blocks inputted are not required', function() {
-            util.replaceYields('<div><yield from="title"></yield><p>Hi</p><yield from="desc"></yield></div>', '<yield to="title"><h1>Hello world</h1></yield><yield to="notexist"><p>Are you kidding me?</p></yield>')
-                .should.be.eql('<div><h1>Hello world</h1><p>Hi</p></div>');
+        it('should not need patches when the items with not key change their position but their relative position with the key item has not changed', function() {
+            var o = [{
+                id: 1
+            }, 1, 2, 3];
+            var n = [{
+                id: 1
+            }, 3, 1, 2];
+            patchesObj = util.listDiff(o, n, key);
+
+            // console.log('>>> patchesObj:', patchesObj);
+            patchesObj.patches.should.have.length(0);
         });
 
-        it('should replace the anonymous yield block with the inner html which is not include the named yield blocks', function() {
-            util.replaceYields('<div><yield from="title"></yield><p>Hi</p><yield from="desc"></yield><yield></yield></div>', 'innerBefore<yield to="title"><h1>Hello world</h1></yield><br/>innerAfter')
-                .should.be.eql('<div><h1>Hello world</h1><p>Hi</p></div>innerBefore<br/>innerAfter');
+        it('should insert the items with not key when their relative position with the key item have changed', function() {
+            var o = [{
+                id: 1
+            }, 1, 2, 3];
+            var n = [2, 3, {
+                id: 1
+            }, 1];
+            patchesObj = util.listDiff(o, n, key);
+
+            console.log('>>> patchesObj:', patchesObj);
+            patchesObj.patches.should.be.eql([{
+                index: 0,
+                item: 2,
+                type: 1
+            }, {
+                index: 1,
+                item: 3,
+                type: 1
+            }]);
         });
 
-        it('should retain the yield blocks nested', function() {
-            util.replaceYields('<div><yield from="title"></yield><p>Hi</p><yield from="desc"></yield><yield></yield></div>', '<yield to="title"><h1>Hello world</h1></yield><yield to="desc"><desc><yield to="other">I\'m a programmer!</yield></desc></yield>')
-                .should.be.eql('<div><h1>Hello world</h1><p>Hi</p></div><desc><yield to="other">I\'m a programmer!</yield></desc>');
+        it('should return empty patches when the inputs are empty array', function() {
+            patchesObj = util.listDiff([], []);
+
+            patchesObj.patches.should.have.length(0);
         });
 
-        it('should not replace the yield blocks nested', function() {
-            util.replaceYields('<div><yield from="title"></yield><p>Hi</p><yield from="desc"></yield><p>Hi2</p><yield from="test"></yield></div>', '<yield to="title"><h1>Hello world</h1></yield><yield to="desc"><desc><yield to="other">I\'m a programmer!</yield><yield to="test">just for test!</yield></desc></yield>')
-                .should.be.eql('<div><h1>Hello world</h1><p>Hi</p></div><desc><yield to="other">I\'m a programmer!</yield><yield to="test">just for test!</yield></desc><p>Hi2</p>');
-        });
     });
+
 });

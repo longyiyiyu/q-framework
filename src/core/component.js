@@ -37,16 +37,26 @@ var basePrototype = {
     getHtml: function() {
         return domUtil.getDomString(this.root);
     },
-    update: function(props) {
+    update: function(props, should) {
         var self = this;
         var shouldUpdate;
 
+        if (typeof props !== 'object') {
+            return;
+        }
+
         // console.log('>>> update:', props);
-        this.trigger('update', props);
-        if (this.shouldComponentUpdate) {
-            shouldUpdate = this.shouldComponentUpdate(props);
-        } else {
+        props && this.trigger('update', props);
+        if (should === true) {
             shouldUpdate = true;
+        } else if (should === false) {
+            shouldUpdate = false;
+        } else {
+            if (this.shouldComponentUpdate) {
+                shouldUpdate = this.shouldComponentUpdate(props);
+            } else {
+                shouldUpdate = true;
+            }
         }
 
         util.extend(this, props);
@@ -91,7 +101,7 @@ function getPropsObj(dom) {
 
     util.scan(dom, function(k, v) {
         r = true;
-        ret[util.getKeyFromDomProp(k)] = v;
+        ret[util.camelize(k)] = v;
     }, util.retTrue);
 
     return r ? ret : null;
@@ -198,9 +208,7 @@ var component = function(html, prototype, css) {
                         } else {
                             p = getPropsObj(dom);
                             if (p) {
-                                id = that.watch(p, function(np, w) {
-                                    this.optMap[w.id].el.update(np);
-                                });
+                                id = that.watch(p, self.getDirective('child'));
                             }
                         }
 
@@ -225,7 +233,7 @@ var component = function(html, prototype, css) {
                         } else {
                             util.scan(dom, function(k, v) {
                                 var id = that.watch(v, function(nv, w) {
-                                    self.getDirective(k).call(this, nv, this.optMap[w.id].el);
+                                    self.getDirective(k).call(this, nv, this.optMap[w.id].el, w);
                                 });
 
                                 that.optMap[id] = {
@@ -271,9 +279,7 @@ var component = function(html, prototype, css) {
             if (C) {
                 p = getPropsObj(dom);
                 if (p) {
-                    ids.push(clazz.watch(p, function(np, w) {
-                        this.optMap[w.id].el.update(np);
-                    }));
+                    ids.push(clazz.watch(p, self.getDirective('child')));
                 }
 
                 domUtil.setAttribute(dom, ID_KEY, ids.length ? JSON.stringify(ids) : 1);
@@ -281,7 +287,7 @@ var component = function(html, prototype, css) {
             } else {
                 util.scan(dom, function(k, v) {
                     ids.push(clazz.watch(v, function(nv, w) {
-                        self.getDirective(k).call(this, nv, this.optMap[w.id].el);
+                        self.getDirective(k).call(this, nv, this.optMap[w.id].el, w);
                     }));
                 });
             }

@@ -68,16 +68,176 @@ function extend(target, srcs) {
     return target;
 }
 
-function getKeyFromDomProp(key) {
-    return key.replace(/-([a-zA-Z])/g, function(m, letter) {
-        return letter.toUpperCase();
+function camelize(str) {
+    return str.replace(/-+(.)?/g, function(match, chr) {
+        return chr ? chr.toUpperCase() : '';
     });
 }
+
+/* listDiff begin */
+
+/**
+ * Convert list to key-item keyIndex object.
+ * @param {Array}           list    the array
+ * @param {String|Function} key     helper to find the key of item    
+ * 
+ */
+function makeKeyIndexAndFree(list, key) {
+    var keyIndex = {};
+    var free = [];
+    var item;
+    var itemKey;
+
+    for (var i = 0, len = list.length; i < len; i++) {
+        item = list[i];
+        itemKey = getItemKey(item, key);
+        if (itemKey) {
+            keyIndex[itemKey] = i;
+        } else {
+            free.push(item);
+        }
+    }
+
+    return {
+        keyIndex: keyIndex,
+        free: free
+    };
+}
+
+/**
+ * find the key of item
+ * @param {Object}          item    the item
+ * @param {String|Function} key     helper to find the key of item    
+ * 
+ */
+function getItemKey(item, key) {
+    if (!item || !key) return void 666;
+    return typeof key === 'string' ? item[key] : key(item);
+}
+
+function remove(patches, index) {
+    patches.push({
+        index: index,
+        type: listDiff.REMOVE
+    });
+}
+
+function insert(patches, index, item) {
+    patches.push({
+        index: index,
+        item: item,
+        type: listDiff.INSERT
+    });
+}
+
+/*
+ * diff two list in O(N).
+ * @param {Array}   oldList     Original List
+ * @param {Array}   newList     List After certain insertions, removes, or moves
+ * @return {Object} { patches: <Array> }    
+ *                    patches is a list of actions that telling how to remove and insert
+ *                    
+ */
+function listDiff(oldList, newList, key) {
+    var oldMap = makeKeyIndexAndFree(oldList, key);
+    var newMap = makeKeyIndexAndFree(newList, key);
+    var oldKeyIndex = oldMap.keyIndex;
+    var newKeyIndex = newMap.keyIndex;
+    var oldFree = oldMap.free;
+    var patches = [];
+
+    // a simulate list to manipulate
+    var children = [];
+    var i = 0;
+    var item;
+    var itemKey;
+    var simulateItem;
+    var simulateItemKey;
+    var freeIndex = 0;
+
+    // fist pass to check item in old list: if it's removed or not
+    while (i < oldList.length) {
+        item = oldList[i];
+        itemKey = getItemKey(item, key);
+        if (itemKey) {
+            if (!(itemKey in newKeyIndex)) {
+                children.push(null);
+            } else {
+                children.push(oldList[oldKeyIndex[itemKey]]);
+            }
+        } else {
+            children.push(oldFree[freeIndex++] || null);
+        }
+        i++;
+    }
+
+    // console.log('>>> children:', children);
+    var simulateList = children.slice(0);
+
+    // remove items no longer exist
+    i = 0;
+    while (i < simulateList.length) {
+        if (simulateList[i] === null) {
+            remove(patches, i);
+            simulateList.splice(i, 1);
+        } else {
+            i++;
+        }
+    }
+
+    // i is cursor pointing to a item in new list
+    // j is cursor pointing to a item in simulateList
+    var j = i = 0;
+    var nextItemKey;
+    while (i < newList.length) {
+        item = newList[i];
+        itemKey = getItemKey(item, key);
+        simulateItem = simulateList[j];
+        simulateItemKey = getItemKey(simulateItem, key);
+
+        if (simulateItem) {
+            if (itemKey === simulateItemKey) {
+                j++;
+            } else {
+                if (!oldKeyIndex.hasOwnProperty(itemKey)) {
+                    // new item, just inesrt it
+                    insert(patches, i);
+                } else {
+                    // looking forward
+                    nextItemKey = getItemKey(simulateList[j + 1], key);
+                    if (nextItemKey === itemKey) {
+                        remove(i);
+                        simulateList.splice(j, 1);
+                        j++;
+                    } else {
+                        // else insert item
+                        insert(patches, i, item);
+                    }
+                }
+            }
+        } else {
+            insert(patches, i);
+        }
+
+        i++;
+    }
+
+    return {
+        patches: patches,
+        children: children
+    };
+}
+
+listDiff.REMOVE = 0;
+listDiff.INSERT = 1;
+
+/* listDiff end */
 
 module.exports = {
     getId: getId,
     walk: walk,
     scan: scan,
+    listDiff: listDiff,
     extend: extend,
     noop: function() {},
     retTrue: function() {
@@ -86,5 +246,5 @@ module.exports = {
     retFalse: function() {
         return false;
     },
-    getKeyFromDomProp: getKeyFromDomProp
+    camelize: camelize
 };
