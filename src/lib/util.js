@@ -77,13 +77,13 @@ function camelize(str) {
 /* listDiff begin */
 
 /**
- * Convert list to key-item keyIndex object.
+ * Convert list to key-item map
  * @param {Array}           list    the array
  * @param {String|Function} key     helper to find the key of item    
  * 
  */
-function makeKeyIndexAndFree(list, key) {
-    var keyIndex = {};
+function makeKeyMapAndFree(list, key) {
+    var keyMap = {};
     var free = [];
     var item;
     var itemKey;
@@ -92,14 +92,14 @@ function makeKeyIndexAndFree(list, key) {
         item = list[i];
         itemKey = getItemKey(item, key);
         if (itemKey) {
-            keyIndex[itemKey] = i;
+            keyMap[itemKey] = item;
         } else {
             free.push(item);
         }
     }
 
     return {
-        keyIndex: keyIndex,
+        keyMap: keyMap,
         free: free
     };
 }
@@ -139,10 +139,10 @@ function insert(patches, index, item) {
  *                    
  */
 function listDiff(oldList, newList, key) {
-    var oldMap = makeKeyIndexAndFree(oldList, key);
-    var newMap = makeKeyIndexAndFree(newList, key);
-    var oldKeyIndex = oldMap.keyIndex;
-    var newKeyIndex = newMap.keyIndex;
+    var oldMap = makeKeyMapAndFree(oldList, key);
+    var newMap = makeKeyMapAndFree(newList, key);
+    var oldKeyMap = oldMap.keyMap;
+    var newKeyMap = newMap.keyMap;
     var oldFree = oldMap.free;
     var patches = [];
 
@@ -160,10 +160,10 @@ function listDiff(oldList, newList, key) {
         item = oldList[i];
         itemKey = getItemKey(item, key);
         if (itemKey) {
-            if (!(itemKey in newKeyIndex)) {
+            if (!(itemKey in newKeyMap)) {
                 children.push(null);
             } else {
-                children.push(oldList[oldKeyIndex[itemKey]]);
+                children.push(oldKeyMap[itemKey]);
             }
         } else {
             children.push(oldFree[freeIndex++] || null);
@@ -199,19 +199,18 @@ function listDiff(oldList, newList, key) {
             if (itemKey === simulateItemKey) {
                 j++;
             } else {
-                if (!oldKeyIndex.hasOwnProperty(itemKey)) {
+                if (!oldKeyMap.hasOwnProperty(itemKey)) {
                     // new item, just inesrt it
                     insert(patches, i);
                 } else {
-                    // looking forward
+                    // looking forward one item
                     nextItemKey = getItemKey(simulateList[j + 1], key);
                     if (nextItemKey === itemKey) {
                         remove(i);
                         simulateList.splice(j, 1);
                         j++;
                     } else {
-                        // else insert item
-                        insert(patches, i, item);
+                        insert(patches, i, oldKeyMap[itemKey]);
                     }
                 }
             }
