@@ -13,6 +13,8 @@ var ev = require('./event');
 var m = require('./mixin');
 
 var ID_KEY = 'q-id-p';
+var qRepeatKey = 'qRepeat';
+var qRepeatAttr = 'q-repeat';
 
 var basePrototype = {
     setParent: function(p) {
@@ -69,6 +71,14 @@ var basePrototype = {
     }
 };
 
+var repeatBasePrototye = util.extend({}, basePrototype, {
+    update: function(props) {
+        console.log('>>> repeat item update:', props);
+        util.extend(this, props);
+        this.dc();
+    }
+});
+
 function getYeildMap(root) {
     var map = {};
     var name;
@@ -110,13 +120,13 @@ function getPropsObj(dom) {
 /*
  * build component obj from its class
  */
-function buildComponent(C, c) {
+function buildComponent(C, c, isRepeat) {
     c._html = C._html;
     c.children = [];
     c.optMap = {};
 
     dc(c, null, C);
-    ev(c);
+    !isRepeat && ev(c);
 }
 
 /*
@@ -130,30 +140,27 @@ function buildComponent(C, c) {
  * @return  {Class}     component   组件类
  * 
  */
-var component = function(html, prototype, css) {
+var component = function(html, prototype, css, isRepeat) {
     var self = this;
     var root = domUtil.getDomTree(html)[0];
     var comName = domUtil.getNodeName(root);
     var temp;
 
-    console.log('>>> component1:', html, comName);
+    console.log('>>> component1:', html, comName, isRepeat);
 
     var clazz = function(innerHtml, props) {
         var that = this;
         var innerDom;
         var innerYieldMap;
 
-        console.log('>>> new clazz:', clazz.comName, innerHtml, props);
+        console.log('>>> new clazz:', clazz.comName, innerHtml, props, isRepeat);
 
         if (typeof innerHtml === 'object' && !props) {
             props = innerHtml;
             innerHtml = '';
         }
 
-        buildComponent(clazz, this);
-
-        // TODO:
-        // this._html = util.replaceYields(this._html, innerHtml);
+        buildComponent(clazz, this, isRepeat);
 
         if (innerHtml) {
             innerDom = domUtil.getDomTree(innerHtml);
@@ -163,7 +170,7 @@ var component = function(html, prototype, css) {
         }
 
         this.root = domUtil.getDomTree(this._html)[0];
-        util.walk(domUtil.getChildNodes(this.root), function(dom) {
+        util.walk(isRepeat ? this.root : domUtil.getChildNodes(this.root), function(dom) {
             var name = domUtil.getNodeName(dom);
             var C = self.getComClass(name);
             var p;
@@ -172,8 +179,10 @@ var component = function(html, prototype, css) {
             var child;
             var yieldKey;
             var yieldDom;
+            var qRepeat;
 
             if (name === 'yield') {
+                // TODO: for repeat
                 yieldKey = domUtil.getAttribute(dom, 'from');
                 yieldDom = innerYieldMap[yieldKey];
                 if (yieldDom) {
@@ -187,6 +196,7 @@ var component = function(html, prototype, css) {
                 }
             } else {
                 ids = domUtil.getAttribute(dom, ID_KEY);
+                qRepeat = domUtil.getAttribute(dom, qRepeatAttr);
                 if (ids) {
                     try {
                         ids = JSON.parse(ids);
@@ -196,7 +206,31 @@ var component = function(html, prototype, css) {
                     }
                 }
 
-                if (C) {
+                if (this.root !== dom && qRepeat) {
+                    child = new self.Repeat(domUtil.getDomString(dom));
+                    that.children.push(child);
+                    child.setParent(that);
+
+                    if (ids !== 1) {
+                        if (ids && ids.length) {
+                            id = ids[0];
+                        } else {
+                            if (p) {
+                                id = that.watch(qRepeat, self.getDirective('child'));
+                            }
+                        }
+
+                        if (id) {
+                            that.optMap[id] = {
+                                el: child
+                            };
+                        }
+                    }
+
+                    domUtil.replaceChild(domUtil.getParentNode(dom), child.getDom(), dom);
+
+                    return false;
+                } else if (C) {
                     // console.log('>>> CCC:', C.comName, dom, domUtil.getInnerHtml(dom));
                     child = new C(domUtil.getInnerHtml(dom));
                     that.children.push(child);
@@ -246,7 +280,7 @@ var component = function(html, prototype, css) {
             }
         });
 
-        this.trigger('init');
+        !isRepeat && this.trigger('init');
 
         util.extend(this, this.defaultProps);
         if (props) {
@@ -256,24 +290,27 @@ var component = function(html, prototype, css) {
 
     // enhance clazz
     dc(null, clazz.prototype);
-    ev(null, clazz.prototype);
-    m(null, clazz.prototype);
+    !isRepeat && ev(null, clazz.prototype);
+    !isRepeat && m(null, clazz.prototype);
 
     // clazz itself must have capacity of dc
     dc(clazz, clazz);
 
+    // TODO: 是否需要预处理？
     // 预处理，和正式处理很像，基本一致
     // 不同：正式处理还会处理yield出来的那部分
     // 这里只是为了加速expr的编译速度，但是加了一些“重复”代码
-    util.walk(domUtil.getChildNodes(root), function(dom) {
+    util.walk(isRepeat ? this.root : domUtil.getChildNodes(root), function(dom) {
         console.log('>>> walk:', dom);
         var name = domUtil.getNodeName(dom);
         var C = self.getComClass(name);
         var p;
         var ids = [];
+        var qRepeat;
 
         // 预编译阶段不需要解析 yield
         if (name === 'yield') {
+            // TODO: for repeat
             return true;
         } else {
             if (C) {
@@ -285,11 +322,18 @@ var component = function(html, prototype, css) {
                 domUtil.setAttribute(dom, ID_KEY, ids.length ? JSON.stringify(ids) : 1);
                 return false;
             } else {
-                util.scan(dom, function(k, v) {
-                    ids.push(clazz.watch(v, function(nv, w) {
-                        self.getDirective(k).call(this, nv, this.optMap[w.id].el, w);
-                    }));
-                });
+                qRepeat = domUtil.getAttribute(dom, qRepeatAttr);
+                if (dom !== this.dom && qRepeat) {
+                    ids.push(clazz.watch(qRepeat, self.getDirective('child')));
+                    domUtil.setAttribute(dom, ID_KEY, ids.length ? JSON.stringify(ids) : 1);
+                    return false;
+                } else {
+                    util.scan(dom, function(k, v) {
+                        ids.push(clazz.watch(v, function(nv, w) {
+                            self.getDirective(k).call(this, nv, this.optMap[w.id].el, w);
+                        }));
+                    });
+                }
             }
 
             domUtil.setAttribute(dom, ID_KEY, ids.length ? JSON.stringify(ids) : 1);
@@ -300,7 +344,7 @@ var component = function(html, prototype, css) {
 
     // 扩展 statics
     util.extend(clazz, {
-        comName: comName,
+        comName: isRepeat ? '' : comName,
         _html: domUtil.getDomString(root)
     }, prototype.statics);
     delete prototype.statics;
@@ -316,10 +360,10 @@ var component = function(html, prototype, css) {
     }
 
     // 扩展 prototype
-    util.extend(clazz.prototype, basePrototype, prototype);
+    util.extend(clazz.prototype, isRepeat ? repeatBasePrototye : basePrototype, prototype);
 
     // 注册组件
-    this.setComClass(comName, clazz);
+    !isRepeat && this.setComClass(comName, clazz);
 
     console.log('>>> clazz:', clazz, clazz.comName + '1', clazz._html, clazz.watcherMap, clazz.watchers);
 
@@ -341,6 +385,7 @@ function getComClass(name) {
 
 function enhancer(obj, proto) {
     proto && util.extend(proto, {
+        repeatItem: repeatItem,
         component: component,
         setComClass: setComClass,
         getComClass: getComClass

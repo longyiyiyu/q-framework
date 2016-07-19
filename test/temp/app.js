@@ -153,6 +153,9 @@
 	// enhance component
 	__webpack_require__(7)(Q, Q);
 
+	// enhance repeat
+	__webpack_require__(12)(Q, Q);
+
 	// enhance mixin
 	__webpack_require__(11)(Q, Q);
 
@@ -292,6 +295,10 @@
 	            data.if_value = false;
 	        }
 	    },
+	    repeat: function(v, dom, w) {
+
+	    },
+
 	    // special for component
 	    child: function(np, w) {
 	        // console.log('>>> directive child:', np);
@@ -302,8 +309,7 @@
 	            directives['if'].call(this, np[qIfKey], el.getDom(), w);
 	        }
 
-	        if (qIfKey in np || qIfKey in el) {
-	            // 有 q-if 的组件
+	        if (qIfKey in np || qIfKey in el) { // 设置了 q-if 的组件
 	            el.update(np, false);
 	            if (!!np[qIfKey] || !!el[qIfKey]) {
 	                // 如果组件在 dom tree，则更新组件
@@ -410,10 +416,189 @@
 	    });
 	}
 
+	/* listDiff begin */
+
+	/**
+	 * Convert list to key-item map
+	 * @param {Array}           list    the array
+	 * @param {String|Function} key     helper to find the key of item    
+	 * 
+	 */
+	function makeKeyMapAndFree(list, key) {
+	    var keyMap = {};
+	    var free = [];
+	    var item;
+	    var itemKey;
+
+	    for (var i = 0, len = list.length; i < len; i++) {
+	        item = list[i];
+	        itemKey = getItemKey(item, key);
+	        if (itemKey) {
+	            keyMap[itemKey] = item;
+	        } else {
+	            free.push(item);
+	        }
+	    }
+
+	    return {
+	        keyMap: keyMap,
+	        free: free
+	    };
+	}
+
+	/**
+	 * find the key of item
+	 * @param {Object}          item    the item
+	 * @param {String|Function} key     helper to find the key of item    
+	 * 
+	 */
+	function getItemKey(item, key) {
+	    if (!item || !key) return void 666;
+	    return typeof key === 'string' ? item[key] : key(item);
+	}
+
+	function remove(patches, index) {
+	    patches.push({
+	        index: index,
+	        type: listDiff.REMOVE
+	    });
+	}
+
+	function insert(patches, index, item) {
+	    patches.push({
+	        index: index,
+	        item: item,
+	        type: listDiff.INSERT
+	    });
+	}
+
+	/*
+	 * diff two list in O(N).
+	 * @param {Array}   oldList     Original List
+	 * @param {Array}   newList     List After certain insertions, removes, or moves
+	 * @return {Object} { patches: <Array> }    
+	 *                    patches is a list of actions that telling how to remove and insert
+	 *                    
+	 */
+	function listDiff(oldList, newList, key) {
+	    var oldMap = makeKeyMapAndFree(oldList, key);
+	    var newMap = makeKeyMapAndFree(newList, key);
+	    var oldKeyMap = oldMap.keyMap;
+	    var newKeyMap = newMap.keyMap;
+	    var newFree = newMap.free;
+	    var oldFree = oldMap.free;
+	    var patches = [];
+
+	    // a simulate list to manipulate
+	    var children = [];
+	    var i = 0;
+	    var item;
+	    var itemKey;
+	    var simulateItem;
+	    var simulateItemKey;
+	    var freeIndex = 0;
+
+	    // fist pass to check item in old list: if it's removed or not
+	    while (i < oldList.length) {
+	        item = oldList[i];
+	        itemKey = getItemKey(item, key);
+	        if (itemKey) {
+	            if (!(itemKey in newKeyMap)) {
+	                children.push(null);
+	            } else {
+	                children.push(oldKeyMap[itemKey]);
+	            }
+	        } else {
+	            children.push(freeIndex < newFree.length ? (oldFree[freeIndex] || null) : null);
+	            freeIndex++;
+	        }
+	        i++;
+	    }
+
+	    // console.log('>>> children:', children);
+	    var simulateList = children.slice(0);
+
+	    // remove items no longer exist
+	    var removeCount = 0;
+	    i = 0;
+	    while (i < simulateList.length) {
+	        if (simulateList[i] === null) {
+	            remove(patches, i);
+	            simulateList.splice(i, 1);
+	        } else {
+	            i++;
+	        }
+	    }
+
+	    // i is cursor pointing to a item in new list
+	    // j is cursor pointing to a item in simulateList
+	    var j = i = 0;
+	    var nextItemKey;
+	    while (i < newList.length) {
+	        item = newList[i];
+	        itemKey = getItemKey(item, key);
+	        simulateItem = simulateList[j];
+	        simulateItemKey = getItemKey(simulateItem, key);
+
+	        if (simulateItem) {
+	            if (itemKey === simulateItemKey) {
+	                j++;
+	            } else {
+	                if (!oldKeyMap.hasOwnProperty(itemKey)) {
+	                    // new item, just inesrt it
+	                    insert(patches, i);
+	                } else {
+	                    // looking forward one item
+	                    nextItemKey = getItemKey(simulateList[j + 1], key);
+	                    if (nextItemKey === itemKey) {
+	                        remove(patches, i);
+	                        simulateList.splice(j, 1);
+	                        j++;
+	                    } else {
+	                        insert(patches, i, oldKeyMap[itemKey]);
+	                    }
+	                }
+	            }
+	        } else {
+	            insert(patches, i);
+	        }
+
+	        i++;
+	    }
+
+	    var p;
+	    i = 0;
+	    while (j < simulateList.length) {
+	        simulateItem = simulateList[j++];
+	        simulateItemKey = getItemKey(simulateItem, key);
+	        if (!simulateItemKey) {
+	            if (i >= patches.length) break;
+	            while (i < patches.length) {
+	                p = patches[i++];
+	                if (p.type === listDiff.INSERT && !p.item) {
+	                    p.item = simulateItem;
+	                    break;
+	                }
+	            }
+	        }
+	    }
+
+	    return {
+	        patches: patches,
+	        children: children
+	    };
+	}
+
+	listDiff.REMOVE = 0;
+	listDiff.INSERT = 1;
+
+	/* listDiff end */
+
 	module.exports = {
 	    getId: getId,
 	    walk: walk,
 	    scan: scan,
+	    listDiff: listDiff,
 	    extend: extend,
 	    noop: function() {},
 	    retTrue: function() {
@@ -729,8 +914,12 @@
 	        var self = this;
 	        var shouldUpdate;
 
+	        if (typeof props !== 'object') {
+	            return;
+	        }
+
 	        // console.log('>>> update:', props);
-	        this.trigger('update', props);
+	        props && this.trigger('update', props);
 	        if (should === true) {
 	            shouldUpdate = true;
 	        } else if (should === false) {
@@ -752,6 +941,14 @@
 	        }
 	    }
 	};
+
+	var repeatBasePrototye = util.extend({}, basePrototype, {
+	    update: function(props) {
+	        console.log('>>> repeat item update:', props);
+	        util.extend(this, props);
+	        this.dc();
+	    }
+	});
 
 	function getYeildMap(root) {
 	    var map = {};
@@ -794,13 +991,13 @@
 	/*
 	 * build component obj from its class
 	 */
-	function buildComponent(C, c) {
+	function buildComponent(C, c, isRepeat) {
 	    c._html = C._html;
 	    c.children = [];
 	    c.optMap = {};
 
 	    dc(c, null, C);
-	    ev(c);
+	    !isRepeat && ev(c);
 	}
 
 	/*
@@ -814,30 +1011,27 @@
 	 * @return  {Class}     component   组件类
 	 * 
 	 */
-	var component = function(html, prototype, css) {
+	var component = function(html, prototype, css, isRepeat) {
 	    var self = this;
 	    var root = domUtil.getDomTree(html)[0];
 	    var comName = domUtil.getNodeName(root);
 	    var temp;
 
-	    console.log('>>> component1:', html, comName);
+	    console.log('>>> component1:', html, comName, isRepeat);
 
 	    var clazz = function(innerHtml, props) {
 	        var that = this;
 	        var innerDom;
 	        var innerYieldMap;
 
-	        console.log('>>> new clazz:', clazz.comName, innerHtml, props);
+	        console.log('>>> new clazz:', clazz.comName, innerHtml, props, isRepeat);
 
 	        if (typeof innerHtml === 'object' && !props) {
 	            props = innerHtml;
 	            innerHtml = '';
 	        }
 
-	        buildComponent(clazz, this);
-
-	        // TODO:
-	        // this._html = util.replaceYields(this._html, innerHtml);
+	        buildComponent(clazz, this, isRepeat);
 
 	        if (innerHtml) {
 	            innerDom = domUtil.getDomTree(innerHtml);
@@ -858,6 +1052,7 @@
 	            var yieldDom;
 
 	            if (name === 'yield') {
+	                // TODO: for repeat
 	                yieldKey = domUtil.getAttribute(dom, 'from');
 	                yieldDom = innerYieldMap[yieldKey];
 	                if (yieldDom) {
@@ -930,7 +1125,7 @@
 	            }
 	        });
 
-	        this.trigger('init');
+	        !isRepeat && this.trigger('init');
 
 	        util.extend(this, this.defaultProps);
 	        if (props) {
@@ -940,12 +1135,13 @@
 
 	    // enhance clazz
 	    dc(null, clazz.prototype);
-	    ev(null, clazz.prototype);
-	    m(null, clazz.prototype);
+	    !isRepeat && ev(null, clazz.prototype);
+	    !isRepeat && m(null, clazz.prototype);
 
 	    // clazz itself must have capacity of dc
 	    dc(clazz, clazz);
 
+	    // TODO: 是否需要预处理？
 	    // 预处理，和正式处理很像，基本一致
 	    // 不同：正式处理还会处理yield出来的那部分
 	    // 这里只是为了加速expr的编译速度，但是加了一些“重复”代码
@@ -958,6 +1154,7 @@
 
 	        // 预编译阶段不需要解析 yield
 	        if (name === 'yield') {
+	            // TODO: for repeat
 	            return true;
 	        } else {
 	            if (C) {
@@ -984,7 +1181,7 @@
 
 	    // 扩展 statics
 	    util.extend(clazz, {
-	        comName: comName,
+	        comName: isRepeat ? '' : comName,
 	        _html: domUtil.getDomString(root)
 	    }, prototype.statics);
 	    delete prototype.statics;
@@ -1000,10 +1197,10 @@
 	    }
 
 	    // 扩展 prototype
-	    util.extend(clazz.prototype, basePrototype, prototype);
+	    util.extend(clazz.prototype, isRepeat ? repeatBasePrototye : basePrototype, prototype);
 
 	    // 注册组件
-	    this.setComClass(comName, clazz);
+	    !isRepeat && this.setComClass(comName, clazz);
 
 	    console.log('>>> clazz:', clazz, clazz.comName + '1', clazz._html, clazz.watcherMap, clazz.watchers);
 
@@ -1025,6 +1222,7 @@
 
 	function enhancer(obj, proto) {
 	    proto && util.extend(proto, {
+	        repeatItem: repeatItem,
 	        component: component,
 	        setComClass: setComClass,
 	        getComClass: getComClass
@@ -1615,6 +1813,126 @@
 	}
 
 	module.exports = enhancer;
+
+
+/***/ },
+/* 12 */
+/***/ function(module, exports, __webpack_require__) {
+
+	/**
+	 * repeat.js
+	 * the functions of repeat
+	 * @author  longyiyiyu
+	 * 
+	 */
+
+	var util = __webpack_require__(3);
+	var domUtil = __webpack_require__(4);
+	var Pool = __webpack_require__(13);
+	var Q = __webpack_require__(1);
+
+	/*
+	 * update the Repeat component
+	 * prototype method of Repeat component class
+	 * @param   {Array}    list         更新的列表
+	 * 
+	 */
+	function update(list) {
+
+	}
+
+	/*
+	 * Repeat component class, internal class
+	 * @param   {String}    innerHtml   需要repeat的html片段
+	 * @param   {Array}     list        初始属性
+	 * 
+	 */
+	function Repeat(innerHtml, list) {
+	    this.root = this.ref = document.createComment('q-repeat');
+
+	    // 预编译 item class
+	    this.itemClass = Q.component(innerHtml, null, null, true);
+	    this.pool = new Pool(this.itemClass);
+	    this.items = [];
+
+	    list && this.update(list);
+	}
+
+	// 扩展 prototype
+	util.extend(Repeat.prototype, {
+	    update: update,
+	    getDom: function() {
+	        return this.root;
+	    },
+	    getHtml: function() {
+	        return domUtil.getDomString(this.root);
+	    },
+	});
+
+	function enhancer(obj, proto) {
+	    proto && util.extend(proto, {
+	        Repeat: Repeat
+	    });
+	}
+
+	module.exports = enhancer;
+
+
+/***/ },
+/* 13 */
+/***/ function(module, exports, __webpack_require__) {
+
+	/**
+	 * componentPool.js
+	 * a pool of components
+	 * which components must use new to create
+	 * and use destroy to release
+	 * @author  longyiyiyu
+	 * 
+	 */
+
+	var util = __webpack_require__(3);
+
+	/*
+	 * 组件池类
+	 * @param   {Class}     clazz       组件类
+	 * 
+	 */
+	function Pool(clazz) {
+	    this.clazz = clazz;
+	    this.cache = [];
+	}
+
+	/*
+	 * 获取组件实例
+	 * @return      {Object}    组件实例
+	 * 
+	 */
+	function get() {
+	    if (this.cache.length) {
+	        return this.cache.pop();
+	    } else {
+	        return new this.clazz();
+	    }
+	}
+
+	/*
+	 * 获取组件实例
+	 * @param      {Object}    obj      组件实例
+	 * 
+	 */
+	function release(obj) {
+	    obj.destroy();
+	    this.cache.push(obj);
+	}
+
+	// 扩展 prototype
+	util.extend(Pool.prototype, {
+	    get: get,
+	    release: release
+	});
+
+	module.exports = Pool;
 
 
 /***/ }

@@ -7,6 +7,7 @@
 
 var util = require('../lib/util');
 var domUtil = require('./dom');
+var Q = require('../Q');
 
 var qIfKey = 'qIf';
 var directives = {
@@ -110,7 +111,7 @@ var directives = {
         var parent;
 
         if (!data.ref) {
-            data.ref = document.createComment('q-if');
+            data.ref = document.createComment('q-if'); // TODO
             data.if_value = true;
         }
 
@@ -129,14 +130,28 @@ var directives = {
         }
     },
     repeat: function(v, dom, w) {
+        var data = this.optMap[w.id];
+        var parent;
 
+        if (typeof v !== 'object') {
+            return;
+        }
+
+        if (!(v instanceof Array)) {
+            v = [v];
+        }
+
+        if (!data.repeat) {
+            data.repeat = Q.Repeat(domUtil.getDomString(dom));
+            parent = domUtil.getParentNode(dom);
+            parent && domUtil.replaceChild(parent, data.repeat.getDom(), dom);
+        }
     },
 
     // special for component
     child: function(np, w) {
         // console.log('>>> directive child:', np);
         var el = this.optMap[w.id].el;
-
 
         if (qIfKey in np) {
             directives['if'].call(this, np[qIfKey], el.getDom(), w);

@@ -8,8 +8,7 @@
 var util = require('../lib/util');
 var domUtil = require('./dom');
 var Pool = require('../lib/componentPool');
-
-function itemClassFactory(innerHtml) {}
+var Q = require('../Q');
 
 /*
  * update the Repeat component
@@ -18,6 +17,7 @@ function itemClassFactory(innerHtml) {}
  * 
  */
 function update(list) {
+    // simple for test
     
 }
 
@@ -31,7 +31,7 @@ function Repeat(innerHtml, list) {
     this.root = this.ref = document.createComment('q-repeat');
 
     // 预编译 item class
-    this.itemClass = itemClassFactory(innerHtml);
+    this.itemClass = Q.component(innerHtml, null, null, true);
     this.pool = new Pool(this.itemClass);
     this.items = [];
 

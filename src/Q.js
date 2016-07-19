@@ -17,6 +17,9 @@ require('./core/directive')(Q, Q);
 // enhance component
 require('./core/component')(Q, Q);
 
+// enhance repeat
+require('./core/repeat')(Q, Q);
+
 // enhance mixin
 require('./core/mixin')(Q, Q);
 

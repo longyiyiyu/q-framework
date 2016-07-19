@@ -143,6 +143,7 @@ function listDiff(oldList, newList, key) {
     var newMap = makeKeyMapAndFree(newList, key);
     var oldKeyMap = oldMap.keyMap;
     var newKeyMap = newMap.keyMap;
+    var newFree = newMap.free;
     var oldFree = oldMap.free;
     var patches = [];
 
@@ -166,7 +167,8 @@ function listDiff(oldList, newList, key) {
                 children.push(oldKeyMap[itemKey]);
             }
         } else {
-            children.push(oldFree[freeIndex++] || null);
+            children.push(freeIndex < newFree.length ? (oldFree[freeIndex] || null) : null);
+            freeIndex++;
         }
         i++;
     }
@@ -175,6 +177,7 @@ function listDiff(oldList, newList, key) {
     var simulateList = children.slice(0);
 
     // remove items no longer exist
+    var removeCount = 0;
     i = 0;
     while (i < simulateList.length) {
         if (simulateList[i] === null) {
@@ -206,7 +209,7 @@ function listDiff(oldList, newList, key) {
                     // looking forward one item
                     nextItemKey = getItemKey(simulateList[j + 1], key);
                     if (nextItemKey === itemKey) {
-                        remove(i);
+                        remove(patches, i);
                         simulateList.splice(j, 1);
                         j++;
                     } else {
@@ -219,6 +222,23 @@ function listDiff(oldList, newList, key) {
         }
 
         i++;
+    }
+
+    var p;
+    i = 0;
+    while (j < simulateList.length) {
+        simulateItem = simulateList[j++];
+        simulateItemKey = getItemKey(simulateItem, key);
+        if (!simulateItemKey) {
+            if (i >= patches.length) break;
+            while (i < patches.length) {
+                p = patches[i++];
+                if (p.type === listDiff.INSERT && !p.item) {
+                    p.item = simulateItem;
+                    break;
+                }
+            }
+        }
     }
 
     return {
