@@ -6,9 +6,6 @@ var util = require('../../src/lib/util');
 describe('lib/util', function() {
     var patchesObj;
     var key = 'id';
-    var keyFun = function(item) {
-        return item.id;
-    };
 
     /*
      * 这个算法是根据经验来的，因此不需要全面测试
@@ -24,20 +21,30 @@ describe('lib/util', function() {
      * 
      */
     describe('@listDiff', function() {
-        // 1. [] => []
+        it('should use the string to find the key', function() {
+            patchesObj = util.listDiff([{
+                id: 1,
+                v: 1
+            }], [{
+                id: 1,
+                v: 2
+            }], key);
+
+            patchesObj.should.have.length(0);
+        });
+
         it('should return empty patches when the inputs are empty array', function() {
             patchesObj = util.listDiff([], []);
 
-            patchesObj.patches.should.have.length(0);
+            patchesObj.should.have.length(0);
         });
 
-        // 2. [] => [新数据或者被丢失id的数据]
-        it('should insert all items when they are has not key', function() {
+        it('should work when adding data to empty list', function() {
             var n = [1, 2, 3];
             patchesObj = util.listDiff([], n);
 
             // console.log('>>> patchesObj:', patchesObj);
-            patchesObj.patches.should.be.eql([{
+            patchesObj.should.be.eql([{
                 index: 0,
                 item: undefined,
                 type: 1
@@ -52,32 +59,7 @@ describe('lib/util', function() {
             }]);
         });
 
-        it('should use the string to find the key', function() {
-            patchesObj = util.listDiff([{
-                id: 1,
-                v: 1
-            }], [{
-                id: 1,
-                v: 2
-            }], key);
-
-            patchesObj.patches.should.have.length(0);
-        });
-
-        it('should use the function to find the key', function() {
-            patchesObj = util.listDiff([{
-                id: 1,
-                v: 1
-            }], [{
-                id: 1,
-                v: 2
-            }], keyFun);
-
-            patchesObj.patches.should.have.length(0);
-        });
-
-        // 3. 新增数据
-        it('should work when adding data', function() {
+        it('should work when adding data to the ending of list', function() {
             var o = [{
                 id: 1
             }, {
@@ -91,7 +73,7 @@ describe('lib/util', function() {
             patchesObj = util.listDiff(o, n, key);
 
             // console.log('>>> patchesObj:', patchesObj);
-            patchesObj.patches.should.be.eql([{
+            patchesObj.should.be.eql([{
                 index: 2,
                 item: undefined,
                 type: 1
@@ -100,13 +82,15 @@ describe('lib/util', function() {
                 item: undefined,
                 type: 1
             }]);
+        });
 
-            o = [{
+        it('should work when adding data to the begining of list', function() {
+            var o = [{
                 id: 1
             }, {
                 id: 2
             }];
-            n = [1, 2, {
+            var n = [1, 2, {
                 id: 1
             }, {
                 id: 2
@@ -114,7 +98,7 @@ describe('lib/util', function() {
             patchesObj = util.listDiff(o, n, key);
 
             // console.log('>>> patchesObj:', patchesObj);
-            patchesObj.patches.should.be.eql([{
+            patchesObj.should.be.eql([{
                 index: 0,
                 item: undefined,
                 type: 1
@@ -123,8 +107,10 @@ describe('lib/util', function() {
                 item: undefined,
                 type: 1
             }]);
+        });
 
-            o = [{
+        it('should work when adding data to the middle of list', function() {
+            var o = [{
                 id: 1
             }, {
                 id: 2
@@ -133,7 +119,7 @@ describe('lib/util', function() {
             }, {
                 id: 4
             }];
-            n = [{
+            var n = [{
                 id: 1
             }, {
                 id: 2
@@ -145,7 +131,7 @@ describe('lib/util', function() {
             patchesObj = util.listDiff(o, n, key);
 
             // console.log('>>> patchesObj:', patchesObj);
-            patchesObj.patches.should.be.eql([{
+            patchesObj.should.be.eql([{
                 index: 2,
                 item: undefined,
                 type: 1
@@ -156,8 +142,7 @@ describe('lib/util', function() {
             }]);
         });
 
-        // 4. 删除数据
-        it('should work when removing data', function() {
+        it('should work when removing data of the ending of list', function() {
             var o = [{
                 id: 1
             }, {
@@ -174,16 +159,18 @@ describe('lib/util', function() {
             }];
             patchesObj = util.listDiff(o, n, key);
 
-            // console.log('>>> patchesObj:', patchesObj.patches);
-            patchesObj.patches.should.be.eql([{
+            // console.log('>>> patchesObj:', patchesObj);
+            patchesObj.should.be.eql([{
                 index: 2,
                 type: 0
             }, {
                 index: 2,
                 type: 0
             }]);
+        });
 
-            o = [{
+        it('should work when removing data of the begining of list', function() {
+            var o = [{
                 id: 1
             }, {
                 id: 2
@@ -192,7 +179,7 @@ describe('lib/util', function() {
             }, {
                 id: 4
             }];
-            n = [{
+            var n = [{
                 id: 3
             }, {
                 id: 4
@@ -200,59 +187,7 @@ describe('lib/util', function() {
             patchesObj = util.listDiff(o, n, key);
 
             // console.log('>>> patchesObj:', patchesObj);
-            patchesObj.patches.should.be.eql([{
-                index: 0,
-                type: 0
-            }, {
-                index: 0,
-                type: 0
-            }]);
-
-            o = [{
-                id: 1
-            }, {
-                id: 2
-            }, {
-                id: 3
-            }, {
-                id: 4
-            }];
-            n = [{
-                id: 1
-            }, {
-                id: 4
-            }];
-            patchesObj = util.listDiff(o, n, key);
-
-            // console.log('>>> patchesObj:', patchesObj);
-            patchesObj.patches.should.be.eql([{
-                index: 1,
-                type: 0
-            }, {
-                index: 1,
-                type: 0
-            }]);
-
-            o = [{
-                id: 1
-            }, {
-                id: 2
-            }, {
-                id: 3
-            }, {
-                id: 4
-            }];
-            n = [];
-            patchesObj = util.listDiff(o, n, key);
-
-            // console.log('>>> patchesObj:', patchesObj);
-            patchesObj.patches.should.be.eql([{
-                index: 0,
-                type: 0
-            }, {
-                index: 0,
-                type: 0
-            }, {
+            patchesObj.should.be.eql([{
                 index: 0,
                 type: 0
             }, {
@@ -261,59 +196,98 @@ describe('lib/util', function() {
             }]);
         });
 
-
-        // 下面的 test case 不是经验场景，用来测试这个算法不会出现问题
-        it('should not need patches when the items with not key change their position but their relative position with the key item has not changed', function() {
+        it('should work when removing data of the middle of list', function() {
             var o = [{
                 id: 1
-            }, 1, 2, 3];
+            }, {
+                id: 2
+            }, {
+                id: 3
+            }, {
+                id: 4
+            }];
             var n = [{
                 id: 1
-            }, 3, 1, 2];
+            }, {
+                id: 4
+            }];
             patchesObj = util.listDiff(o, n, key);
 
             // console.log('>>> patchesObj:', patchesObj);
-            patchesObj.patches.should.have.length(0);
-        });
-
-        it('should insert the items with not key when their relative position with the key item have changed', function() {
-            var o = [{
-                id: 1
-            }, 1, 2, 3];
-            var n = [2, 3, {
-                id: 1
-            }, 1];
-            patchesObj = util.listDiff(o, n, key);
-
-            // console.log('>>> patchesObj:', patchesObj);
-            patchesObj.patches.should.be.eql([{
-                index: 0,
-                item: 2,
-                type: 1
+            patchesObj.should.be.eql([{
+                index: 1,
+                type: 0
             }, {
                 index: 1,
-                item: 3,
-                type: 1
+                type: 0
             }]);
+        });
 
-            o = [2, 3, {
+        it('should work when removing all the data of list', function() {
+            var o = [{
                 id: 1
-            }, 1];
-            n = [{
-                id: 1
-            }, 1, 2, 3];
+            }, {
+                id: 2
+            }, {
+                id: 3
+            }, {
+                id: 4
+            }];
+            var n = [];
             patchesObj = util.listDiff(o, n, key);
 
             // console.log('>>> patchesObj:', patchesObj);
-            patchesObj.patches.should.be.eql([{
+            patchesObj.should.be.eql([{
+                index: 0,
+                type: 0
+            }, {
+                index: 0,
+                type: 0
+            }, {
+                index: 0,
+                type: 0
+            }, {
+                index: 0,
+                type: 0
+            }]);
+        });
+
+        it('should work when the new data is disordered', function() {
+            var o = [{
+                id: 1
+            }, {
+                id: 2
+            }, {
+                id: 3
+            }, {
+                id: 4
+            }];
+            var n = [{
+                id: 3
+            }, {
+                id: 1
+            }, 1, 2, {
+                id: 2
+            }];
+            patchesObj = util.listDiff(o, n, key);
+
+            // console.log('>>> patchesObj:', patchesObj);
+            patchesObj.should.be.eql([{
+                index: 3,
+                type: 0
+            }, {
                 index: 0,
                 item: {
-                    id: 1
+                    id: 3
                 },
                 type: 1
             }, {
+                index: 2,
+                item: undefined,
+                type: 1
+            }, {
                 index: 3,
-                item: 1,
+                item: undefined,
                 type: 1
             }]);
         });
@@ -339,8 +313,8 @@ describe('lib/util', function() {
             }];
             patchesObj = util.listDiff(o, n, key);
 
-            // console.log('>>> patchesObj:', patchesObj.patches);
-            patchesObj.patches.should.be.eql([{
+            // console.log('>>> patchesObj:', patchesObj);
+            patchesObj.should.be.eql([{
                 index: 0,
                 item: {
                     id: 4
@@ -387,8 +361,8 @@ describe('lib/util', function() {
             }];
             patchesObj = util.listDiff(o, n, key);
 
-            // console.log('>>> patchesObj:', patchesObj.patches);
-            patchesObj.patches.should.be.eql([{
+            // console.log('>>> patchesObj:', patchesObj);
+            patchesObj.should.be.eql([{
                 index: 0,
                 item: {
                     id: 5

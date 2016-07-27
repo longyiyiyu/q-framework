@@ -82,37 +82,20 @@ function camelize(str) {
  * @param {String|Function} key     helper to find the key of item    
  * 
  */
-function makeKeyMapAndFree(list, key) {
+function makeKeyMap(list, key) {
     var keyMap = {};
-    var free = [];
     var item;
     var itemKey;
 
     for (var i = 0, len = list.length; i < len; i++) {
         item = list[i];
-        itemKey = getItemKey(item, key);
+        itemKey = item[key];
         if (itemKey) {
             keyMap[itemKey] = item;
-        } else {
-            free.push(item);
         }
     }
 
-    return {
-        keyMap: keyMap,
-        free: free
-    };
-}
-
-/**
- * find the key of item
- * @param {Object}          item    the item
- * @param {String|Function} key     helper to find the key of item    
- * 
- */
-function getItemKey(item, key) {
-    if (!item || !key) return void 666;
-    return typeof key === 'string' ? item[key] : key(item);
+    return keyMap;
 }
 
 function remove(patches, index) {
@@ -130,6 +113,19 @@ function insert(patches, index, item) {
     });
 }
 
+function printList(list, key) {
+    var item;
+    var itemKey;
+    var str = '';
+
+    for (var i = 0, l = list.length; i < l; ++i) {
+        item = list[i];
+        itemKey = item[key];
+        str += (itemKey || '-1') + '|';
+    }
+    console.log('>>> printList:', str);
+}
+
 /*
  * diff two list in O(N).
  * @param {Array}   oldList     Original List
@@ -139,45 +135,42 @@ function insert(patches, index, item) {
  *                    
  */
 function listDiff(oldList, newList, key) {
-    var oldMap = makeKeyMapAndFree(oldList, key);
-    var newMap = makeKeyMapAndFree(newList, key);
-    var oldKeyMap = oldMap.keyMap;
-    var newKeyMap = newMap.keyMap;
-    var newFree = newMap.free;
-    var oldFree = oldMap.free;
+    var oldKeyMap = makeKeyMap(oldList, key);
+    var newKeyMap = makeKeyMap(newList, key);
     var patches = [];
 
     // a simulate list to manipulate
-    var children = [];
+    var simulateList = [];
     var i = 0;
     var item;
     var itemKey;
     var simulateItem;
     var simulateItemKey;
-    var freeIndex = 0;
+
+    console.log('>>> listDiff:');
+    printList(oldList, key);
+    console.log('');
+    printList(newList, key);
+    console.log('');
 
     // fist pass to check item in old list: if it's removed or not
     while (i < oldList.length) {
         item = oldList[i];
-        itemKey = getItemKey(item, key);
+        itemKey = item[key];
         if (itemKey) {
             if (!(itemKey in newKeyMap)) {
-                children.push(null);
+                simulateList.push(null);
             } else {
-                children.push(oldKeyMap[itemKey]);
+                simulateList.push(oldKeyMap[itemKey]);
             }
         } else {
-            children.push(freeIndex < newFree.length ? (oldFree[freeIndex] || null) : null);
-            freeIndex++;
+            // 根据经验，oldList 的 items 一定会有 key
+            throw new Error('there is an item without key in oldList!');
         }
         i++;
     }
 
-    // console.log('>>> children:', children);
-    var simulateList = children.slice(0);
-
     // remove items no longer exist
-    var removeCount = 0;
     i = 0;
     while (i < simulateList.length) {
         if (simulateList[i] === null) {
@@ -192,28 +185,40 @@ function listDiff(oldList, newList, key) {
     // j is cursor pointing to a item in simulateList
     var j = i = 0;
     var nextItemKey;
+    var insertItemMap = {};
     while (i < newList.length) {
         item = newList[i];
-        itemKey = getItemKey(item, key);
+        itemKey = item[key];
         simulateItem = simulateList[j];
-        simulateItemKey = getItemKey(simulateItem, key);
+        simulateItemKey = (simulateItem || {})[key];
 
         if (simulateItem) {
             if (itemKey === simulateItemKey) {
+                // key 相等
                 j++;
             } else {
                 if (!oldKeyMap.hasOwnProperty(itemKey)) {
                     // new item, just inesrt it
                     insert(patches, i);
                 } else {
+                    while (simulateItemKey in insertItemMap) {
+                        // simulateItem 已经在前面被 insert 了
+                        delete insertItemMap[simulateItemKey];
+                        simulateList.splice(j, 1);
+                        simulateItem = simulateList[j];
+                        simulateItemKey = (simulateItem || {})[key];
+                    }
+
                     // looking forward one item
-                    nextItemKey = getItemKey(simulateList[j + 1], key);
+                    nextItemKey = (simulateList[j + 1] || {})[key];
                     if (nextItemKey === itemKey) {
                         remove(patches, i);
                         simulateList.splice(j, 1);
                         j++;
                     } else {
+                        // itemKey 一定不是 undefined
                         insert(patches, i, oldKeyMap[itemKey]);
+                        insertItemMap[itemKey] = 1;
                     }
                 }
             }
@@ -224,27 +229,7 @@ function listDiff(oldList, newList, key) {
         i++;
     }
 
-    var p;
-    i = 0;
-    while (j < simulateList.length) {
-        simulateItem = simulateList[j++];
-        simulateItemKey = getItemKey(simulateItem, key);
-        if (!simulateItemKey) {
-            if (i >= patches.length) break;
-            while (i < patches.length) {
-                p = patches[i++];
-                if (p.type === listDiff.INSERT && !p.item) {
-                    p.item = simulateItem;
-                    break;
-                }
-            }
-        }
-    }
-
-    return {
-        patches: patches,
-        children: children
-    };
+    return patches;
 }
 
 listDiff.REMOVE = 0;
@@ -264,6 +249,9 @@ module.exports = {
     },
     retFalse: function() {
         return false;
+    },
+    getRandomId: function() {
+        return Math.ceil(Math.random() * 1000000);
     },
     camelize: camelize
 };

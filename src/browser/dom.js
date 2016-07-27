@@ -74,6 +74,9 @@ module.exports = {
     replaceChild: function(el, n, o) {
         return el.replaceChild(n, o);
     },
+    insertBefore: function(el, n, o) {
+        return el.insertBefore(n, o);
+    },
     removeChild: function(el, n) {
         return el.removeChild(n);
     },

@@ -72,6 +72,10 @@ function removeChild(el, n) {
     return impl.removeChild(el, n);
 }
 
+function insertBefore(el, n, o) {
+    return impl.insertBefore(el, n, o);
+}
+
 function getClassName(el) {
     return impl.getClassName(el);
 }
@@ -113,6 +117,7 @@ module.exports = {
     removeClass: removeClass,
     replaceChild: replaceChild,
     removeChild: removeChild,
+    insertBefore: insertBefore,
     getClassName: getClassName,
     setClassName: setClassName,
     getStyle: getStyle,

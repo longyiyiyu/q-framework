@@ -37,8 +37,14 @@ var basePrototype = {
         return this.root;
     },
     getHtml: function() {
-        return domUtil.getDomString(this.root);
+        if (this.hasUpdated) {
+            this._html = domUtil.getDomString(this.root);
+            this.hasUpdated = false;
+        }
+
+        return this._html;
     },
+    destroy: function() {},
     update: function(props, should) {
         var self = this;
         var shouldUpdate;
@@ -64,6 +70,7 @@ var basePrototype = {
         util.extend(this, props);
         if (shouldUpdate) {
             this.dc();
+            this.hasUpdated = true;
             setTimeout(function() {
                 self.trigger('updated');
             }, 32);
@@ -110,6 +117,7 @@ function getPropsObj(dom) {
     var r = false;
 
     util.scan(dom, function(k, v) {
+        if (k === qRepeatAttr || k === ID_KEY) return;
         r = true;
         ret[util.camelize(k)] = v;
     }, util.retTrue);
@@ -180,6 +188,8 @@ var component = function(html, prototype, css, isRepeat) {
             var yieldKey;
             var yieldDom;
             var qRepeat;
+            var itemClass;
+            var parent;
 
             if (name === 'yield') {
                 // TODO: for repeat
@@ -206,8 +216,9 @@ var component = function(html, prototype, css, isRepeat) {
                     }
                 }
 
-                if (this.root !== dom && qRepeat) {
-                    child = new self.Repeat(domUtil.getDomString(dom));
+                if (that.root !== dom && qRepeat) {
+                    itemClass = self.component(domUtil.getDomString(dom), null, null, true);
+                    child = new self.Repeat(itemClass);
                     that.children.push(child);
                     child.setParent(that);
 
@@ -253,7 +264,12 @@ var component = function(html, prototype, css, isRepeat) {
                         }
                     }
 
-                    domUtil.replaceChild(domUtil.getParentNode(dom), child.getDom(), dom);
+                    if (that.root !== dom) {
+                        domUtil.replaceChild(domUtil.getParentNode(dom), child.getDom(), dom);
+                    } else {
+                        that.root = child.getDom();
+                    }
+
 
                     return false;
                 } else {
@@ -266,6 +282,7 @@ var component = function(html, prototype, css, isRepeat) {
                             }
                         } else {
                             util.scan(dom, function(k, v) {
+                                if (k === qRepeatAttr || k === ID_KEY) return;
                                 var id = that.watch(v, function(nv, w) {
                                     self.getDirective(k).call(this, nv, this.optMap[w.id].el, w);
                                 });
@@ -300,7 +317,7 @@ var component = function(html, prototype, css, isRepeat) {
     // 预处理，和正式处理很像，基本一致
     // 不同：正式处理还会处理yield出来的那部分
     // 这里只是为了加速expr的编译速度，但是加了一些“重复”代码
-    util.walk(isRepeat ? this.root : domUtil.getChildNodes(root), function(dom) {
+    util.walk(isRepeat ? root : domUtil.getChildNodes(root), function(dom) {
         console.log('>>> walk:', dom);
         var name = domUtil.getNodeName(dom);
         var C = self.getComClass(name);
@@ -313,7 +330,12 @@ var component = function(html, prototype, css, isRepeat) {
             // TODO: for repeat
             return true;
         } else {
-            if (C) {
+            qRepeat = domUtil.getAttribute(dom, qRepeatAttr);
+            if (dom !== root && qRepeat) {
+                ids.push(clazz.watch(qRepeat, self.getDirective('child')));
+                domUtil.setAttribute(dom, ID_KEY, ids.length ? JSON.stringify(ids) : 1);
+                return false;
+            } else if (C) {
                 p = getPropsObj(dom);
                 if (p) {
                     ids.push(clazz.watch(p, self.getDirective('child')));
@@ -322,18 +344,12 @@ var component = function(html, prototype, css, isRepeat) {
                 domUtil.setAttribute(dom, ID_KEY, ids.length ? JSON.stringify(ids) : 1);
                 return false;
             } else {
-                qRepeat = domUtil.getAttribute(dom, qRepeatAttr);
-                if (dom !== this.dom && qRepeat) {
-                    ids.push(clazz.watch(qRepeat, self.getDirective('child')));
-                    domUtil.setAttribute(dom, ID_KEY, ids.length ? JSON.stringify(ids) : 1);
-                    return false;
-                } else {
-                    util.scan(dom, function(k, v) {
-                        ids.push(clazz.watch(v, function(nv, w) {
-                            self.getDirective(k).call(this, nv, this.optMap[w.id].el, w);
-                        }));
-                    });
-                }
+                util.scan(dom, function(k, v) {
+                    if (k === qRepeatAttr || k === ID_KEY) return;
+                    ids.push(clazz.watch(v, function(nv, w) {
+                        self.getDirective(k).call(this, nv, this.optMap[w.id].el, w);
+                    }));
+                });
             }
 
             domUtil.setAttribute(dom, ID_KEY, ids.length ? JSON.stringify(ids) : 1);
@@ -385,7 +401,6 @@ function getComClass(name) {
 
 function enhancer(obj, proto) {
     proto && util.extend(proto, {
-        repeatItem: repeatItem,
         component: component,
         setComClass: setComClass,
         getComClass: getComClass

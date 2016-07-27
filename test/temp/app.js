@@ -56,7 +56,9 @@
 
 	var Com2 = Q.component('<com2><yield from="p1"></yield><h3 q-text="title"></h3><yield from="p2"></yield></com2>');
 
-	var MyCom2 = Q.component('<myCom2>  <com1 q-if="!ifValue" title="title+\' Long! \'" html="html" desc="summary" title2="title + \'2\'"><yield to="p1"><p q-html="html"></p></yield>  <yield to="p2"><com2 title="title+\' try! \'" title2="title2"><yield to="p1"><h1 q-text="\'title: \' + title2"></h1></yield></com2></yield></com1>   <br/><br/>   <h1 q-text="title"></h1><myCom title="title" summary="summary" is-blue="isBlue" is-big="1"></myCom><p q-text="author" q-class="{aa:isBlue, bb:0}"></p><MyCom3 title="summary"></MyCom3>  <br/><br/>  <p q-attr="attrs">aaa</p> <p q-css="attrs.style">aaabbb</p>  <p q-show="isShow">aaabbbccc</p> <input type="checkbox" q-value="isCheck">isCheck</input> <input type="text" q-value="textValue"></input> <a href="javascript:" q-on="aEvents">test directive on</a>  <p q-if="ifValue">if this is true!</p><p q-if="!ifValue">if this is false!</p> </myCom2>', {
+	var MyCom4 = Q.component('<MyCom4><h2 q-text="title"></h2><p q-text="desc"></p></MyCom4>');
+
+	var MyCom2 = Q.component('<myCom2>  <MyCom4 q-repeat="list" title="__index + \'. \' + parent.title + \'>\' + title" desc="desc"></MyCom4>  <br/><br/>  <com1 q-if="!ifValue" title="title+\' Long! \'" html="html" desc="summary" title2="title + \'2\'"><yield to="p1"><p q-html="html"></p></yield>  <yield to="p2"><com2 title="title+\' try! \'" title2="title2"><yield to="p1"><h1 q-text="\'title: \' + title2"></h1></yield></com2></yield></com1>   <br/><br/>   <h1 q-text="title"></h1><myCom title="title" summary="summary" is-blue="isBlue" is-big="1"></myCom><p q-text="author" q-class="{aa:isBlue, bb:0}"></p><MyCom3 title="summary"></MyCom3>  <br/><br/>  <p q-attr="attrs">aaa</p> <p q-css="attrs.style">aaabbb</p>  <p q-show="isShow">aaabbbccc</p> <input type="checkbox" q-value="isCheck">isCheck</input> <input type="text" q-value="textValue"></input> <a href="javascript:" q-on="aEvents">test directive on</a>  <p q-if="ifValue">if this is true!</p><p q-if="!ifValue">if this is false!</p>  <br/><br/>  <div q-repeat="list" q-class="{red: isRed}"><h4 q-text="__index + \'. \' + parent.title + \'>\' + title"></h4><p q-text="desc"></p></div> </myCom2>', {
 	    getDefaultProps: function() {
 	        return {
 	            isBlue: 1
@@ -80,6 +82,16 @@
 	    console.log('>>> testFun:', e.type, e, this);
 	};
 
+	var list = [{
+	    isRed: true,
+	    title: 'a',
+	    desc: 'aa'
+	}, {
+	    isRed: false,
+	    title: 'b',
+	    desc: 'bb'
+	}];
+
 	c2.update({
 	    title: 'Hello world!',
 	    summary: 'hahahaha',
@@ -99,7 +111,8 @@
 	        click: testFun,
 	        mousedown: testFun
 	    },
-	    ifValue: 1
+	    ifValue: 1,
+	    list: list
 	});
 
 	console.log('after update:', c2, c2.getHtml());
@@ -116,14 +129,39 @@
 	});
 
 	setTimeout(function() {
+	    list.push({
+	        isRed: false,
+	        title: 'cccc',
+	        desc: 'cccccc'
+	    });
+	    list = list.slice();
 	    c2.update({
 	        title: 'aaaa Hello world!',
 	        isShow: true,
 	        isCheck: false,
 	        textValue: 'Hello',
-	        ifValue: 0
+	        ifValue: 0,
+	        list: list
 	    });
+
+	    setTimeout(function() {
+	        list.reverse();
+	        list = list.slice();
+	        c2.update({
+	            list: list
+	        });
+
+	        setTimeout(function() {
+	            list.splice(1, 3);
+	            list = list.slice();
+	            c2.update({
+	                list: list
+	            });
+	        }, 1000);
+	    }, 1000);
 	}, 1000);
+
+
 
 	window.onload = function() {
 	    document.getElementById('test').appendChild(c2.getDom());
@@ -174,6 +212,7 @@
 
 	var util = __webpack_require__(3);
 	var domUtil = __webpack_require__(4);
+	var Q = __webpack_require__(1);
 
 	var qIfKey = 'qIf';
 	var directives = {
@@ -277,7 +316,7 @@
 	        var parent;
 
 	        if (!data.ref) {
-	            data.ref = document.createComment('q-if');
+	            data.ref = document.createComment('q-if'); // TODO
 	            data.if_value = true;
 	        }
 
@@ -296,14 +335,28 @@
 	        }
 	    },
 	    repeat: function(v, dom, w) {
+	        var data = this.optMap[w.id];
+	        var parent;
 
+	        if (typeof v !== 'object') {
+	            return;
+	        }
+
+	        if (!(v instanceof Array)) {
+	            v = [v];
+	        }
+
+	        if (!data.repeat) {
+	            data.repeat = Q.Repeat(domUtil.getDomString(dom));
+	            parent = domUtil.getParentNode(dom);
+	            parent && domUtil.replaceChild(parent, data.repeat.getDom(), dom);
+	        }
 	    },
 
 	    // special for component
 	    child: function(np, w) {
 	        // console.log('>>> directive child:', np);
 	        var el = this.optMap[w.id].el;
-
 
 	        if (qIfKey in np) {
 	            directives['if'].call(this, np[qIfKey], el.getDom(), w);
@@ -324,6 +377,7 @@
 	function getDirective(key) {
 	    key = key.replace(/^q-/, '');
 
+	    // console.log('>>> getDirective:', key);
 	    return directives[key];
 	}
 
@@ -424,37 +478,20 @@
 	 * @param {String|Function} key     helper to find the key of item    
 	 * 
 	 */
-	function makeKeyMapAndFree(list, key) {
+	function makeKeyMap(list, key) {
 	    var keyMap = {};
-	    var free = [];
 	    var item;
 	    var itemKey;
 
 	    for (var i = 0, len = list.length; i < len; i++) {
 	        item = list[i];
-	        itemKey = getItemKey(item, key);
+	        itemKey = item[key];
 	        if (itemKey) {
 	            keyMap[itemKey] = item;
-	        } else {
-	            free.push(item);
 	        }
 	    }
 
-	    return {
-	        keyMap: keyMap,
-	        free: free
-	    };
-	}
-
-	/**
-	 * find the key of item
-	 * @param {Object}          item    the item
-	 * @param {String|Function} key     helper to find the key of item    
-	 * 
-	 */
-	function getItemKey(item, key) {
-	    if (!item || !key) return void 666;
-	    return typeof key === 'string' ? item[key] : key(item);
+	    return keyMap;
 	}
 
 	function remove(patches, index) {
@@ -472,6 +509,19 @@
 	    });
 	}
 
+	function printList(list, key) {
+	    var item;
+	    var itemKey;
+	    var str = '';
+
+	    for (var i = 0, l = list.length; i < l; ++i) {
+	        item = list[i];
+	        itemKey = item[key];
+	        str += (itemKey || '-1') + '|';
+	    }
+	    console.log('>>> printList:', str);
+	}
+
 	/*
 	 * diff two list in O(N).
 	 * @param {Array}   oldList     Original List
@@ -481,45 +531,42 @@
 	 *                    
 	 */
 	function listDiff(oldList, newList, key) {
-	    var oldMap = makeKeyMapAndFree(oldList, key);
-	    var newMap = makeKeyMapAndFree(newList, key);
-	    var oldKeyMap = oldMap.keyMap;
-	    var newKeyMap = newMap.keyMap;
-	    var newFree = newMap.free;
-	    var oldFree = oldMap.free;
+	    var oldKeyMap = makeKeyMap(oldList, key);
+	    var newKeyMap = makeKeyMap(newList, key);
 	    var patches = [];
 
 	    // a simulate list to manipulate
-	    var children = [];
+	    var simulateList = [];
 	    var i = 0;
 	    var item;
 	    var itemKey;
 	    var simulateItem;
 	    var simulateItemKey;
-	    var freeIndex = 0;
+
+	    console.log('>>> listDiff:');
+	    printList(oldList, key);
+	    console.log('');
+	    printList(newList, key);
+	    console.log('');
 
 	    // fist pass to check item in old list: if it's removed or not
 	    while (i < oldList.length) {
 	        item = oldList[i];
-	        itemKey = getItemKey(item, key);
+	        itemKey = item[key];
 	        if (itemKey) {
 	            if (!(itemKey in newKeyMap)) {
-	                children.push(null);
+	                simulateList.push(null);
 	            } else {
-	                children.push(oldKeyMap[itemKey]);
+	                simulateList.push(oldKeyMap[itemKey]);
 	            }
 	        } else {
-	            children.push(freeIndex < newFree.length ? (oldFree[freeIndex] || null) : null);
-	            freeIndex++;
+	            // 根据经验，oldList 的 items 一定会有 key
+	            throw new Error('there is an item without key in oldList!');
 	        }
 	        i++;
 	    }
 
-	    // console.log('>>> children:', children);
-	    var simulateList = children.slice(0);
-
 	    // remove items no longer exist
-	    var removeCount = 0;
 	    i = 0;
 	    while (i < simulateList.length) {
 	        if (simulateList[i] === null) {
@@ -534,28 +581,40 @@
 	    // j is cursor pointing to a item in simulateList
 	    var j = i = 0;
 	    var nextItemKey;
+	    var insertItemMap = {};
 	    while (i < newList.length) {
 	        item = newList[i];
-	        itemKey = getItemKey(item, key);
+	        itemKey = item[key];
 	        simulateItem = simulateList[j];
-	        simulateItemKey = getItemKey(simulateItem, key);
+	        simulateItemKey = (simulateItem || {})[key];
 
 	        if (simulateItem) {
 	            if (itemKey === simulateItemKey) {
+	                // key 相等
 	                j++;
 	            } else {
 	                if (!oldKeyMap.hasOwnProperty(itemKey)) {
 	                    // new item, just inesrt it
 	                    insert(patches, i);
 	                } else {
+	                    while (simulateItemKey in insertItemMap) {
+	                        // simulateItem 已经在前面被 insert 了
+	                        delete insertItemMap[simulateItemKey];
+	                        simulateList.splice(j, 1);
+	                        simulateItem = simulateList[j];
+	                        simulateItemKey = (simulateItem || {})[key];
+	                    }
+
 	                    // looking forward one item
-	                    nextItemKey = getItemKey(simulateList[j + 1], key);
+	                    nextItemKey = (simulateList[j + 1] || {})[key];
 	                    if (nextItemKey === itemKey) {
 	                        remove(patches, i);
 	                        simulateList.splice(j, 1);
 	                        j++;
 	                    } else {
+	                        // itemKey 一定不是 undefined
 	                        insert(patches, i, oldKeyMap[itemKey]);
+	                        insertItemMap[itemKey] = 1;
 	                    }
 	                }
 	            }
@@ -566,27 +625,7 @@
 	        i++;
 	    }
 
-	    var p;
-	    i = 0;
-	    while (j < simulateList.length) {
-	        simulateItem = simulateList[j++];
-	        simulateItemKey = getItemKey(simulateItem, key);
-	        if (!simulateItemKey) {
-	            if (i >= patches.length) break;
-	            while (i < patches.length) {
-	                p = patches[i++];
-	                if (p.type === listDiff.INSERT && !p.item) {
-	                    p.item = simulateItem;
-	                    break;
-	                }
-	            }
-	        }
-	    }
-
-	    return {
-	        patches: patches,
-	        children: children
-	    };
+	    return patches;
 	}
 
 	listDiff.REMOVE = 0;
@@ -606,6 +645,9 @@
 	    },
 	    retFalse: function() {
 	        return false;
+	    },
+	    getRandomId: function() {
+	        return Math.ceil(Math.random() * 1000000);
 	    },
 	    camelize: camelize
 	};
@@ -689,6 +731,10 @@
 	    return impl.removeChild(el, n);
 	}
 
+	function insertBefore(el, n, o) {
+	    return impl.insertBefore(el, n, o);
+	}
+
 	function getClassName(el) {
 	    return impl.getClassName(el);
 	}
@@ -730,6 +776,7 @@
 	    removeClass: removeClass,
 	    replaceChild: replaceChild,
 	    removeChild: removeChild,
+	    insertBefore: insertBefore,
 	    getClassName: getClassName,
 	    setClassName: setClassName,
 	    getStyle: getStyle,
@@ -819,6 +866,9 @@
 	    replaceChild: function(el, n, o) {
 	        return el.replaceChild(n, o);
 	    },
+	    insertBefore: function(el, n, o) {
+	        return el.insertBefore(n, o);
+	    },
 	    removeChild: function(el, n) {
 	        return el.removeChild(n);
 	    },
@@ -886,6 +936,8 @@
 	var m = __webpack_require__(11);
 
 	var ID_KEY = 'q-id-p';
+	var qRepeatKey = 'qRepeat';
+	var qRepeatAttr = 'q-repeat';
 
 	var basePrototype = {
 	    setParent: function(p) {
@@ -908,8 +960,14 @@
 	        return this.root;
 	    },
 	    getHtml: function() {
-	        return domUtil.getDomString(this.root);
+	        if (this.hasUpdated) {
+	            this._html = domUtil.getDomString(this.root);
+	            this.hasUpdated = false;
+	        }
+
+	        return this._html;
 	    },
+	    destroy: function() {},
 	    update: function(props, should) {
 	        var self = this;
 	        var shouldUpdate;
@@ -935,6 +993,7 @@
 	        util.extend(this, props);
 	        if (shouldUpdate) {
 	            this.dc();
+	            this.hasUpdated = true;
 	            setTimeout(function() {
 	                self.trigger('updated');
 	            }, 32);
@@ -981,6 +1040,7 @@
 	    var r = false;
 
 	    util.scan(dom, function(k, v) {
+	        if (k === qRepeatAttr || k === ID_KEY) return;
 	        r = true;
 	        ret[util.camelize(k)] = v;
 	    }, util.retTrue);
@@ -1041,7 +1101,7 @@
 	        }
 
 	        this.root = domUtil.getDomTree(this._html)[0];
-	        util.walk(domUtil.getChildNodes(this.root), function(dom) {
+	        util.walk(isRepeat ? this.root : domUtil.getChildNodes(this.root), function(dom) {
 	            var name = domUtil.getNodeName(dom);
 	            var C = self.getComClass(name);
 	            var p;
@@ -1050,6 +1110,9 @@
 	            var child;
 	            var yieldKey;
 	            var yieldDom;
+	            var qRepeat;
+	            var itemClass;
+	            var parent;
 
 	            if (name === 'yield') {
 	                // TODO: for repeat
@@ -1066,6 +1129,7 @@
 	                }
 	            } else {
 	                ids = domUtil.getAttribute(dom, ID_KEY);
+	                qRepeat = domUtil.getAttribute(dom, qRepeatAttr);
 	                if (ids) {
 	                    try {
 	                        ids = JSON.parse(ids);
@@ -1075,7 +1139,32 @@
 	                    }
 	                }
 
-	                if (C) {
+	                if (that.root !== dom && qRepeat) {
+	                    itemClass = self.component(domUtil.getDomString(dom), null, null, true);
+	                    child = new self.Repeat(itemClass);
+	                    that.children.push(child);
+	                    child.setParent(that);
+
+	                    if (ids !== 1) {
+	                        if (ids && ids.length) {
+	                            id = ids[0];
+	                        } else {
+	                            if (p) {
+	                                id = that.watch(qRepeat, self.getDirective('child'));
+	                            }
+	                        }
+
+	                        if (id) {
+	                            that.optMap[id] = {
+	                                el: child
+	                            };
+	                        }
+	                    }
+
+	                    domUtil.replaceChild(domUtil.getParentNode(dom), child.getDom(), dom);
+
+	                    return false;
+	                } else if (C) {
 	                    // console.log('>>> CCC:', C.comName, dom, domUtil.getInnerHtml(dom));
 	                    child = new C(domUtil.getInnerHtml(dom));
 	                    that.children.push(child);
@@ -1098,7 +1187,12 @@
 	                        }
 	                    }
 
-	                    domUtil.replaceChild(domUtil.getParentNode(dom), child.getDom(), dom);
+	                    if (that.root !== dom) {
+	                        domUtil.replaceChild(domUtil.getParentNode(dom), child.getDom(), dom);
+	                    } else {
+	                        that.root = child.getDom();
+	                    }
+
 
 	                    return false;
 	                } else {
@@ -1111,6 +1205,7 @@
 	                            }
 	                        } else {
 	                            util.scan(dom, function(k, v) {
+	                                if (k === qRepeatAttr || k === ID_KEY) return;
 	                                var id = that.watch(v, function(nv, w) {
 	                                    self.getDirective(k).call(this, nv, this.optMap[w.id].el, w);
 	                                });
@@ -1145,19 +1240,25 @@
 	    // 预处理，和正式处理很像，基本一致
 	    // 不同：正式处理还会处理yield出来的那部分
 	    // 这里只是为了加速expr的编译速度，但是加了一些“重复”代码
-	    util.walk(domUtil.getChildNodes(root), function(dom) {
+	    util.walk(isRepeat ? root : domUtil.getChildNodes(root), function(dom) {
 	        console.log('>>> walk:', dom);
 	        var name = domUtil.getNodeName(dom);
 	        var C = self.getComClass(name);
 	        var p;
 	        var ids = [];
+	        var qRepeat;
 
 	        // 预编译阶段不需要解析 yield
 	        if (name === 'yield') {
 	            // TODO: for repeat
 	            return true;
 	        } else {
-	            if (C) {
+	            qRepeat = domUtil.getAttribute(dom, qRepeatAttr);
+	            if (dom !== root && qRepeat) {
+	                ids.push(clazz.watch(qRepeat, self.getDirective('child')));
+	                domUtil.setAttribute(dom, ID_KEY, ids.length ? JSON.stringify(ids) : 1);
+	                return false;
+	            } else if (C) {
 	                p = getPropsObj(dom);
 	                if (p) {
 	                    ids.push(clazz.watch(p, self.getDirective('child')));
@@ -1167,6 +1268,7 @@
 	                return false;
 	            } else {
 	                util.scan(dom, function(k, v) {
+	                    if (k === qRepeatAttr || k === ID_KEY) return;
 	                    ids.push(clazz.watch(v, function(nv, w) {
 	                        self.getDirective(k).call(this, nv, this.optMap[w.id].el, w);
 	                    }));
@@ -1222,7 +1324,6 @@
 
 	function enhancer(obj, proto) {
 	    proto && util.extend(proto, {
-	        repeatItem: repeatItem,
 	        component: component,
 	        setComClass: setComClass,
 	        getComClass: getComClass
@@ -1829,7 +1930,23 @@
 	var util = __webpack_require__(3);
 	var domUtil = __webpack_require__(4);
 	var Pool = __webpack_require__(13);
-	var Q = __webpack_require__(1);
+	var REPEATIDKEY = '__repeatId';
+
+	function removeInsertItem(list, index, key) {
+	    var item;
+	    var itemKey;
+
+	    while (index < list.length) {
+	        item = list[index];
+	        itemKey = item[REPEATIDKEY];
+	        if (itemKey === key) {
+	            list.splice(index, 1);
+	            break;
+	        }
+
+	        index++;
+	    }
+	}
 
 	/*
 	 * update the Repeat component
@@ -1838,7 +1955,105 @@
 	 * 
 	 */
 	function update(list) {
+	    var patches;
+	    var patch;
+	    var index;
 
+	    console.log('>>> repeat update:', list);
+	    if (typeof list !== 'object') {
+	        return;
+	    }
+
+	    if (!(list instanceof Array)) {
+	        list = [list];
+	    }
+
+	    // simple for test
+	    var parent = domUtil.getParentNode(this.root);
+	    var item;
+	    var itemKey;
+	    var removeMap = {};
+
+	    // 没有 parent 就代表不在 dom tree 上面，直接退出
+	    if (!parent) return;
+
+	    patches = util.listDiff(this.items, list, REPEATIDKEY);
+	    // console.log('>>> patches:', patches);
+	    for (var i = 0, l = patches.length; i < l; ++i) {
+	        patch = patches[i];
+	        index = patch.index;
+	        item = patch.item;
+	        if (patch.type === util.listDiff.REMOVE) {
+	            itemKey = this.items[index][REPEATIDKEY];
+	            if (itemKey) {
+	                removeMap[itemKey] = this.items[index];
+	            }
+	            domUtil.removeChild(parent, this.items[index].getDom());
+	            this.items.splice(index, 1);
+	        } else {
+	            if (!item) {
+	                item = this.pool.get();
+	                item.parent = this.parent;
+	                delete item[REPEATIDKEY];
+	            }
+	            domUtil.insertBefore(parent, item.getDom(), (this.items[index] || this).getDom());
+	            itemKey = item[REPEATIDKEY];
+	            if (itemKey) {
+	                if (itemKey in removeMap) {
+	                    delete removeMap[itemKey];
+	                } else {
+	                    removeInsertItem(this.items, index, itemKey);
+	                }
+	            }
+	            this.items.splice(index, 0, item);
+	        }
+	    }
+
+	    var ext;
+	    i = 0;
+	    while (i < list.length) {
+	        item = this.items[i];
+	        if (!item) {
+	            throw new Error('there is something wrong of listDiff!');
+	        } else {
+	            itemKey = item[REPEATIDKEY];
+	            if (!itemKey) {
+	                item[REPEATIDKEY] = list[i][REPEATIDKEY] || util.getRandomId();
+	            }
+
+	            ext = {
+	                __index: i
+	            };
+	            ext[REPEATIDKEY] = item[REPEATIDKEY];
+	            item.update(util.extend(list[i], ext));
+	        }
+
+	        i++;
+	    }
+
+	    for (var k in removeMap) {
+	        this.pool.release(removeMap[k]);
+	    }
+
+	    // while (i < list.length) {
+	    //     if (!this.items[i]) {
+	    //         this.items[i] = this.pool.get();
+	    //         this.items[i].parent = this.parent;
+	    //         this.items[i].__repeatId = util.getRandomId();
+	    //         parent && domUtil.insertBefore(parent, this.items[i].getDom(), this.root);
+	    //     }
+
+	    // this.items[i].update(util.extend(list[i], {
+	    //     __index: i
+	    // }));
+	    //     i++;
+	    // }
+
+	    // while (i < this.items.length) {
+	    //     this.pool.release(this.items[i]);
+	    //     parent && domUtil.removeChild(parent, this.items[i].getDom());
+	    //     this.items.splice(i, 1);
+	    // }
 	}
 
 	/*
@@ -1847,11 +2062,11 @@
 	 * @param   {Array}     list        初始属性
 	 * 
 	 */
-	function Repeat(innerHtml, list) {
+	function Repeat(itemClass, list) {
 	    this.root = this.ref = document.createComment('q-repeat');
 
 	    // 预编译 item class
-	    this.itemClass = Q.component(innerHtml, null, null, true);
+	    this.itemClass = itemClass;
 	    this.pool = new Pool(this.itemClass);
 	    this.items = [];
 
@@ -1860,13 +2075,19 @@
 
 	// 扩展 prototype
 	util.extend(Repeat.prototype, {
+	    setParent: function(p) {
+	        // TODO
+	        this.parent = p;
+	    },
 	    update: update,
 	    getDom: function() {
+	        // TODO
 	        return this.root;
 	    },
 	    getHtml: function() {
+	        // TODO
 	        return domUtil.getDomString(this.root);
-	    },
+	    }
 	});
 
 	function enhancer(obj, proto) {

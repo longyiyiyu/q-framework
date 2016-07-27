@@ -172,6 +172,7 @@ var directives = {
 function getDirective(key) {
     key = key.replace(/^q-/, '');
 
+    // console.log('>>> getDirective:', key);
     return directives[key];
 }
 
