@@ -44,7 +44,6 @@ var basePrototype = {
 
         return this._html;
     },
-    destroy: function() {},
     update: function(props, should) {
         var self = this;
         var shouldUpdate;
@@ -156,17 +155,12 @@ var component = function(html, prototype, css, isRepeat) {
 
     console.log('>>> component1:', html, comName, isRepeat);
 
-    var clazz = function(innerHtml, props) {
+    var clazz = function(innerHtml) {
         var that = this;
         var innerDom;
         var innerYieldMap;
 
-        console.log('>>> new clazz:', clazz.comName, innerHtml, props, isRepeat);
-
-        if (typeof innerHtml === 'object' && !props) {
-            props = innerHtml;
-            innerHtml = '';
-        }
+        console.log('>>> new clazz:', clazz.comName, innerHtml, isRepeat);
 
         buildComponent(clazz, this, isRepeat);
 
@@ -218,7 +212,7 @@ var component = function(html, prototype, css, isRepeat) {
 
                 if (that.root !== dom && qRepeat) {
                     itemClass = self.component(domUtil.getDomString(dom), null, null, true);
-                    child = new self.Repeat(itemClass);
+                    child = new self.Repeat(itemClass, innerHtml);
                     that.children.push(child);
                     child.setParent(that);
 
@@ -300,9 +294,6 @@ var component = function(html, prototype, css, isRepeat) {
         !isRepeat && this.trigger('init');
 
         util.extend(this, this.defaultProps);
-        if (props) {
-            this.update(props);
-        }
     };
 
     // enhance clazz
@@ -327,7 +318,6 @@ var component = function(html, prototype, css, isRepeat) {
 
         // 预编译阶段不需要解析 yield
         if (name === 'yield') {
-            // TODO: for repeat
             return true;
         } else {
             qRepeat = domUtil.getAttribute(dom, qRepeatAttr);

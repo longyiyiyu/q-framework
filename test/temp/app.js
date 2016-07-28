@@ -58,7 +58,9 @@
 
 	var MyCom4 = Q.component('<MyCom4><h2 q-text="title"></h2><p q-text="desc"></p></MyCom4>');
 
-	var MyCom2 = Q.component('<myCom2>  <MyCom4 q-repeat="list" title="__index + \'. \' + parent.title + \'>\' + title" desc="desc"></MyCom4>  <br/><br/>  <com1 q-if="!ifValue" title="title+\' Long! \'" html="html" desc="summary" title2="title + \'2\'"><yield to="p1"><p q-html="html"></p></yield>  <yield to="p2"><com2 title="title+\' try! \'" title2="title2"><yield to="p1"><h1 q-text="\'title: \' + title2"></h1></yield></com2></yield></com1>   <br/><br/>   <h1 q-text="title"></h1><myCom title="title" summary="summary" is-blue="isBlue" is-big="1"></myCom><p q-text="author" q-class="{aa:isBlue, bb:0}"></p><MyCom3 title="summary"></MyCom3>  <br/><br/>  <p q-attr="attrs">aaa</p> <p q-css="attrs.style">aaabbb</p>  <p q-show="isShow">aaabbbccc</p> <input type="checkbox" q-value="isCheck">isCheck</input> <input type="text" q-value="textValue"></input> <a href="javascript:" q-on="aEvents">test directive on</a>  <p q-if="ifValue">if this is true!</p><p q-if="!ifValue">if this is false!</p>  <br/><br/>  <div q-repeat="list" q-class="{red: isRed}"><h4 q-text="__index + \'. \' + parent.title + \'>\' + title"></h4><p q-text="desc"></p></div> </myCom2>', {
+	var MyCom5 = Q.component('<MyCom5><h1 q-text="title"></h1><ul><li q-repeat="list"><h2 q-text="title"></h2><p q-text="desc"></p><yield from="date"></yield></li></ul></MyCom5>');
+
+	var MyCom2 = Q.component('<myCom2>  <MyCom5 title="title" list="list"><yield to="date"><p q-text="123 + title"></p></yield></MyCom5>  <br/><br/>  <com1 q-repeat="list" title="3 + __index + \'. \' + title" desc="desc"><yield to="p1"><p q-text="desc"></p></yield></com1>  <br/><br/>  <MyCom4 q-repeat="list" title="__index + \'. \' + parent.title + \'>\' + title" desc="desc"></MyCom4>  <br/><br/>  <com1 q-if="!ifValue" title="title+\' Long! \'" html="html" desc="summary" title2="title + \'2\'"><yield to="p1"><p q-html="html"></p></yield>  <yield to="p2"><com2 title="title+\' try! \'" title2="title2"><yield to="p1"><h1 q-text="\'title: \' + title2"></h1></yield></com2></yield></com1>   <br/><br/>   <h1 q-text="title"></h1><myCom title="title" summary="summary" is-blue="isBlue" is-big="1"></myCom><p q-text="author" q-class="{aa:isBlue, bb:0}"></p><MyCom3 title="summary"></MyCom3>  <br/><br/>  <p q-attr="attrs">aaa</p> <p q-css="attrs.style">aaabbb</p>  <p q-show="isShow">aaabbbccc</p> <input type="checkbox" q-value="isCheck">isCheck</input> <input type="text" q-value="textValue"></input> <a href="javascript:" q-on="aEvents">test directive on</a>  <p q-if="ifValue">if this is true!</p><p q-if="!ifValue">if this is false!</p>  <br/><br/>  <div q-repeat="list" q-class="{red: isRed}"><h4 q-text="__index + \'. \' + parent.title + \'>\' + title"></h4><p q-text="desc"></p></div> </myCom2>', {
 	    getDefaultProps: function() {
 	        return {
 	            isBlue: 1
@@ -1079,17 +1081,12 @@
 
 	    console.log('>>> component1:', html, comName, isRepeat);
 
-	    var clazz = function(innerHtml, props) {
+	    var clazz = function(innerHtml) {
 	        var that = this;
 	        var innerDom;
 	        var innerYieldMap;
 
-	        console.log('>>> new clazz:', clazz.comName, innerHtml, props, isRepeat);
-
-	        if (typeof innerHtml === 'object' && !props) {
-	            props = innerHtml;
-	            innerHtml = '';
-	        }
+	        console.log('>>> new clazz:', clazz.comName, innerHtml, isRepeat);
 
 	        buildComponent(clazz, this, isRepeat);
 
@@ -1118,6 +1115,7 @@
 	                // TODO: for repeat
 	                yieldKey = domUtil.getAttribute(dom, 'from');
 	                yieldDom = innerYieldMap[yieldKey];
+	                console.log('>>> new class yield:', yieldKey, innerYieldMap);
 	                if (yieldDom) {
 	                    // console.log('>>> find yield:', dom, domUtil.getInnerHtml(dom), yieldDom, domUtil.getInnerHtml(yieldDom));
 	                    domUtil.replaceChild(domUtil.getParentNode(dom), yieldDom, dom);
@@ -1141,7 +1139,8 @@
 
 	                if (that.root !== dom && qRepeat) {
 	                    itemClass = self.component(domUtil.getDomString(dom), null, null, true);
-	                    child = new self.Repeat(itemClass);
+	                    child = new self.Repeat(itemClass, innerHtml);
+	                    console.log('>>> aaaaaaa >>>>', domUtil.getDomString(dom), innerHtml);
 	                    that.children.push(child);
 	                    child.setParent(that);
 
@@ -1223,9 +1222,6 @@
 	        !isRepeat && this.trigger('init');
 
 	        util.extend(this, this.defaultProps);
-	        if (props) {
-	            this.update(props);
-	        }
 	    };
 
 	    // enhance clazz
@@ -1250,7 +1246,6 @@
 
 	        // 预编译阶段不需要解析 yield
 	        if (name === 'yield') {
-	            // TODO: for repeat
 	            return true;
 	        } else {
 	            qRepeat = domUtil.getAttribute(dom, qRepeatAttr);
@@ -1968,7 +1963,6 @@
 	        list = [list];
 	    }
 
-	    // simple for test
 	    var parent = domUtil.getParentNode(this.root);
 	    var item;
 	    var itemKey;
@@ -2062,15 +2056,15 @@
 	 * @param   {Array}     list        初始属性
 	 * 
 	 */
-	function Repeat(itemClass, list) {
+	function Repeat(itemClass, innerHtml) {
 	    this.root = this.ref = document.createComment('q-repeat');
 
 	    // 预编译 item class
 	    this.itemClass = itemClass;
-	    this.pool = new Pool(this.itemClass);
+	    this.pool = new Pool(this.itemClass, innerHtml);
 	    this.items = [];
 
-	    list && this.update(list);
+	    // list && this.update(list);
 	}
 
 	// 扩展 prototype
@@ -2119,8 +2113,9 @@
 	 * @param   {Class}     clazz       组件类
 	 * 
 	 */
-	function Pool(clazz) {
+	function Pool(clazz, param) {
 	    this.clazz = clazz;
+	    this.param = param;
 	    this.cache = [];
 	}
 
@@ -2130,10 +2125,11 @@
 	 * 
 	 */
 	function get() {
+	    console.log('>>> pool get:', this.clazz, this.param);
 	    if (this.cache.length) {
 	        return this.cache.pop();
 	    } else {
-	        return new this.clazz();
+	        return new this.clazz(this.param);
 	    }
 	}
 

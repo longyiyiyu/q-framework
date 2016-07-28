@@ -46,7 +46,6 @@ function update(list) {
         list = [list];
     }
 
-    // simple for test
     var parent = domUtil.getParentNode(this.root);
     var item;
     var itemKey;
@@ -140,15 +139,15 @@ function update(list) {
  * @param   {Array}     list        初始属性
  * 
  */
-function Repeat(itemClass, list) {
+function Repeat(itemClass, innerHtml) {
     this.root = this.ref = document.createComment('q-repeat');
 
     // 预编译 item class
     this.itemClass = itemClass;
-    this.pool = new Pool(this.itemClass);
+    this.pool = new Pool(this.itemClass, innerHtml);
     this.items = [];
 
-    list && this.update(list);
+    // list && this.update(list);
 }
 
 // 扩展 prototype

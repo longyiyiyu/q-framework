@@ -14,8 +14,9 @@ var util = require('../lib/util');
  * @param   {Class}     clazz       组件类
  * 
  */
-function Pool(clazz) {
+function Pool(clazz, param) {
     this.clazz = clazz;
+    this.param = param;
     this.cache = [];
 }
 
@@ -28,7 +29,7 @@ function get() {
     if (this.cache.length) {
         return this.cache.pop();
     } else {
-        return new this.clazz();
+        return new this.clazz(this.param);
     }
 }
 
@@ -38,7 +39,7 @@ function get() {
  * 
  */
 function release(obj) {
-    obj.destroy();
+    // obj.destroy();
     this.cache.push(obj);
 }
 

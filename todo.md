@@ -8,5 +8,5 @@
 [Y] 7. component life circle
 [-] 8. update 嵌套调用问题 (应该只会出现在事件里面)
 [Y] 9. mixin 功能
-[-] 10. repeat
-[-] 11. destory
+[Y] 10. repeat
+[X] 11. destory
