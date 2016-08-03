@@ -1,27 +1,37 @@
 {
-  "name": "q-framework",
+  "name": "qui",
   "version": "0.0.1",
-  "description": "a framework based on Q.js2",
-  "main": "index.js",
+  "description": "an ui library with q directives",
+  "main": "dist/Q.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "gulp test"
   },
   "keywords": [
     "Q",
-    "Qjs",
-    "framework"
+    "Qui",
+    "directives",
+    "ui library"
   ],
   "repository": {
     "type": "git",
     "url": "git+https://github.com/longyiyiyu/q-framework.git"
   },
   "author": "longyiyiyu",
-  "license": "ISC",
+  "license": "MIT",
   "bugs": {
     "url": "https://github.com/longyiyiyu/q-framework/issues"
   },
   "homepage": "https://github.com/longyiyiyu/q-framework#readme",
   "devDependencies": {
+    "gulp": "^3.9.1",
+    "gulp-uglify": "^1.5.4",
+    "gulp-webpack": "^1.5.0",
+    "karma": "^1.1.2",
+    "karma-chrome-launcher": "^1.0.1",
+    "karma-mocha": "^1.1.1",
+    "karma-mocha-reporter": "^2.0.5",
+    "map-stream": "0.0.6",
+    "maxmin": "^2.1.0",
     "should": "^8.4.0",
     "should-sinon": "0.0.5",
     "sinon": "^1.17.4",

@@ -7,7 +7,6 @@
 
 var util = require('../lib/util');
 var domUtil = require('./dom');
-var Q = require('../Q');
 
 var qIfKey = 'qIf';
 var directives = {
@@ -128,24 +127,24 @@ var directives = {
             parent && domUtil.replaceChild(parent, data.ref, dom);
             data.if_value = false;
         }
-    },
-    repeat: function(v, dom, w) {
-        var data = this.optMap[w.id];
-        var parent;
+    // },
+    // repeat: function(v, dom, w) {
+    //     var data = this.optMap[w.id];
+    //     var parent;
 
-        if (typeof v !== 'object') {
-            return;
-        }
+    //     if (typeof v !== 'object') {
+    //         return;
+    //     }
 
-        if (!(v instanceof Array)) {
-            v = [v];
-        }
+    //     if (!(v instanceof Array)) {
+    //         v = [v];
+    //     }
 
-        if (!data.repeat) {
-            data.repeat = Q.Repeat(domUtil.getDomString(dom));
-            parent = domUtil.getParentNode(dom);
-            parent && domUtil.replaceChild(parent, data.repeat.getDom(), dom);
-        }
+    //     if (!data.repeat) {
+    //         data.repeat = Q.Repeat(domUtil.getDomString(dom));
+    //         parent = domUtil.getParentNode(dom);
+    //         parent && domUtil.replaceChild(parent, data.repeat.getDom(), dom);
+    //     }
     },
 
     // special for component

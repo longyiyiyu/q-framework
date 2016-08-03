@@ -46,3 +46,4 @@ Temporary Items
 node_modules
 lego_modules
 dist
+mochawesome-reports

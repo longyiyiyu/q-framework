@@ -5,7 +5,7 @@ var sinon = require('sinon');
 var Pool = require('../../src/lib/componentPool');
 require('should-sinon');
 
-describe('core/mixin', function() {
+describe('lib/componentPool', function() {
     var p;
     var o;
 
@@ -27,17 +27,17 @@ describe('core/mixin', function() {
         clazz.should.be.calledWithNew();
     });
 
-    it('should call the destroy method of object when releasing', function() {
-        var clazz = function() {
-            this.destroy = sinon.spy();
-        };
+    // it('should call the destroy method of object when releasing', function() {
+    //     var clazz = function() {
+    //         this.destroy = sinon.spy();
+    //     };
 
-        p = new Pool(clazz);
-        o = p.get();
-        p.release(o);
+    //     p = new Pool(clazz);
+    //     o = p.get();
+    //     p.release(o);
 
-        o.destroy.should.be.calledOnce();
-    });
+    //     o.destroy.should.be.calledOnce();
+    // });
 
     it('should return an object when the pool is not empty', function() {
         var count = 0;

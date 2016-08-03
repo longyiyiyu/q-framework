@@ -147,11 +147,11 @@ function listDiff(oldList, newList, key) {
     var simulateItem;
     var simulateItemKey;
 
-    console.log('>>> listDiff:');
-    printList(oldList, key);
-    console.log('');
-    printList(newList, key);
-    console.log('');
+    // console.log('>>> listDiff:');
+    // printList(oldList, key);
+    // console.log('');
+    // printList(newList, key);
+    // console.log('');
 
     // fist pass to check item in old list: if it's removed or not
     while (i < oldList.length) {
