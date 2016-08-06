@@ -29,7 +29,7 @@ function buildWatcher(obj, raw, expr, trigger) {
  * init expression
  */
 function makeExpr(expr) {
-    console.log('>>> makeExpr:', expr);
+    // console.log('>>> makeExpr:', expr);
     if (typeof expr === 'string') {
         return tmpl.compile(expr);
     } else if (typeof expr === 'object') {

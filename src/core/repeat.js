@@ -37,7 +37,7 @@ function update(list) {
     var patch;
     var index;
 
-    console.log('>>> repeat update:', list);
+    // console.log('>>> repeat update:', list);
     if (typeof list !== 'object') {
         return;
     }

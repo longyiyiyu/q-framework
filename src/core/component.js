@@ -79,7 +79,7 @@ var basePrototype = {
 
 var repeatBasePrototye = util.extend({}, basePrototype, {
     update: function(props) {
-        console.log('>>> repeat item update:', props);
+        // console.log('>>> repeat item update:', props);
         util.extend(this, props);
         this.dc();
     }
@@ -153,14 +153,14 @@ var component = function(html, prototype, css, isRepeat) {
     var comName = domUtil.getNodeName(root);
     var temp;
 
-    console.log('>>> component1:', html, comName, isRepeat);
+    // console.log('>>> component1:', html, comName, isRepeat);
 
     var clazz = function(innerHtml) {
         var that = this;
         var innerDom;
         var innerYieldMap;
 
-        console.log('>>> new clazz:', clazz.comName, innerHtml, isRepeat);
+        // console.log('>>> new clazz:', clazz.comName, innerHtml, isRepeat);
 
         buildComponent(clazz, this, isRepeat);
 
@@ -309,7 +309,7 @@ var component = function(html, prototype, css, isRepeat) {
     // 不同：正式处理还会处理yield出来的那部分
     // 这里只是为了加速expr的编译速度，但是加了一些“重复”代码
     util.walk(isRepeat ? root : domUtil.getChildNodes(root), function(dom) {
-        console.log('>>> walk:', dom);
+        // console.log('>>> walk:', dom);
         var name = domUtil.getNodeName(dom);
         var C = self.getComClass(name);
         var p;
@@ -371,7 +371,7 @@ var component = function(html, prototype, css, isRepeat) {
     // 注册组件
     !isRepeat && this.setComClass(comName, clazz);
 
-    console.log('>>> clazz:', clazz, clazz.comName + '1', clazz._html, clazz.watcherMap, clazz.watchers);
+    // console.log('>>> clazz:', clazz, clazz.comName + '1', clazz._html, clazz.watcherMap, clazz.watchers);
 
     return clazz;
 };
