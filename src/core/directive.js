@@ -16,23 +16,39 @@ var directives = {
     html: function(v, dom) {
         domUtil.setInnerHtml(dom, v);
     },
-    'class': function(v, dom) {
+    'class': function(v, dom, w) {
+        var data = this.optMap[w.id];
         var cn;
         var tar;
 
-        if (!v || typeof v !== 'object') return;
+        if (!v) return;
         cn = ' ' + (domUtil.getClassName(dom) || '') + ' ';
-        for (var k in v) {
-            if (v[k]) {
-                if (cn.indexOf(' ' + k + ' ') < 0) {
-                    cn += k + ' ';
+        if (typeof v === 'object') {
+            for (var k in v) {
+                if (v[k]) {
+                    if (cn.indexOf(' ' + k + ' ') < 0) {
+                        cn += k + ' ';
+                    }
+                } else {
+                    tar = ' ' + k + ' ';
+                    while (cn.indexOf(tar) >= 0) {
+                        cn = cn.replace(tar, ' ');
+                    }
                 }
-            } else {
-                tar = ' ' + k + ' ';
+            }
+        } else if (typeof v === 'string') {
+            if (data.lastClassName) {
+                tar = ' ' + data.lastClassName + ' ';
                 while (cn.indexOf(tar) >= 0) {
                     cn = cn.replace(tar, ' ');
                 }
             }
+
+            if (cn.indexOf(' ' + v + ' ') < 0) {
+                cn += v + ' ';
+            }
+
+            data.lastClassName = v;
         }
 
         domUtil.setClassName(dom, cn.trim());
@@ -48,7 +64,7 @@ var directives = {
                         }
                     }
                 } else if (k in dom) {
-                    dom[k] = v;
+                    dom[k] = v[k];
                 } else {
                     domUtil.setAttribute(dom, k, v[k]);
                 }
@@ -56,7 +72,7 @@ var directives = {
         }
     },
     css: function(v, dom) {
-        if (v === undefined || typeof v !== 'object') return;
+        if (!v || typeof v !== 'object') return;
         for (var key in v) {
             if (v.hasOwnProperty(key)) {
                 domUtil.setStyle(dom, util.camelize(key), v[key]);
@@ -95,9 +111,11 @@ var directives = {
             if (v.hasOwnProperty(k)) {
                 if (typeof v[k] === 'function') {
                     // TODO: add the capacity of useCapture argument
-                    domUtil.addEventListener(dom, k, function(e) {
-                        v[k].call(self, e);
-                    }, false);
+                    (function(type, cb) {
+                        domUtil.addEventListener(dom, type, function(e) {
+                            cb.call(self, e);
+                        }, false);
+                    })(k, v[k]);
                 }
             }
         }
@@ -127,24 +145,6 @@ var directives = {
             parent && domUtil.replaceChild(parent, data.ref, dom);
             data.if_value = false;
         }
-    // },
-    // repeat: function(v, dom, w) {
-    //     var data = this.optMap[w.id];
-    //     var parent;
-
-    //     if (typeof v !== 'object') {
-    //         return;
-    //     }
-
-    //     if (!(v instanceof Array)) {
-    //         v = [v];
-    //     }
-
-    //     if (!data.repeat) {
-    //         data.repeat = Q.Repeat(domUtil.getDomString(dom));
-    //         parent = domUtil.getParentNode(dom);
-    //         parent && domUtil.replaceChild(parent, data.repeat.getDom(), dom);
-    //     }
     },
 
     // special for component

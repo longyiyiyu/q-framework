@@ -60,7 +60,9 @@
 
 	var MyCom5 = Q.component('<MyCom5><h1 q-text="title"></h1><ul><li q-repeat="list"><h2 q-text="title"></h2><p q-text="desc"></p><yield from="date"></yield></li></ul></MyCom5>');
 
-	var MyCom2 = Q.component('<myCom2>  <MyCom5 title="title" list="list"><yield to="date"><p q-text="123 + title"></p></yield></MyCom5>  <br/><br/>  <com1 q-repeat="list" title="3 + __index + \'. \' + title" desc="desc"><yield to="p1"><p q-text="desc"></p></yield></com1>  <br/><br/>  <MyCom4 q-repeat="list" title="__index + \'. \' + parent.title + \'>\' + title" desc="desc"></MyCom4>  <br/><br/>  <com1 q-if="!ifValue" title="title+\' Long! \'" html="html" desc="summary" title2="title + \'2\'"><yield to="p1"><p q-html="html"></p></yield>  <yield to="p2"><com2 title="title+\' try! \'" title2="title2"><yield to="p1"><h1 q-text="\'title: \' + title2"></h1></yield></com2></yield></com1>   <br/><br/>   <h1 q-text="title"></h1><myCom title="title" summary="summary" is-blue="isBlue" is-big="1"></myCom><p q-text="author" q-class="{aa:isBlue, bb:0}"></p><MyCom3 title="summary"></MyCom3>  <br/><br/>  <p q-attr="attrs">aaa</p> <p q-css="attrs.style">aaabbb</p>  <p q-show="isShow">aaabbbccc</p> <input type="checkbox" q-value="isCheck">isCheck</input> <input type="text" q-value="textValue"></input> <a href="javascript:" q-on="aEvents">test directive on</a>  <p q-if="ifValue">if this is true!</p><p q-if="!ifValue">if this is false!</p>  <br/><br/>  <div q-repeat="list" q-class="{red: isRed}"><h4 q-text="__index + \'. \' + parent.title + \'>\' + title"></h4><p q-text="desc"></p></div> </myCom2>', {
+	var MyCom6 = Q.component('<MyCom6><img class="image" src="about:blank" q-attr="{src: url}"></MyCom6>');
+
+	var MyCom2 = Q.component('<myCom2>  <MyCom6 url="url"></MyCom6>  <MyCom5 title="title" list="list"><yield to="date"><p q-text="123 + title"></p></yield></MyCom5>  <br/><br/>  <com1 q-repeat="list" title="3 + __index + \'. \' + title" desc="desc"><yield to="p1"><p q-text="desc"></p></yield></com1>  <br/><br/>  <MyCom4 q-repeat="list" title="__index + \'. \' + parent.title + \'>\' + title" desc="desc"></MyCom4>  <br/><br/>  <com1 q-if="!ifValue" title="title+\' Long! \'" html="html" desc="summary" title2="title + \'2\'"><yield to="p1"><p q-html="html"></p></yield>  <yield to="p2"><com2 title="title+\' try! \'" title2="title2"><yield to="p1"><h1 q-text="\'title: \' + title2"></h1></yield></com2></yield></com1>   <br/><br/>   <h1 q-text="title"></h1><myCom title="title" summary="summary" is-blue="isBlue" is-big="1"></myCom><p q-text="author" q-class="{aa:isBlue, bb:0}"></p><MyCom3 title="summary"></MyCom3>  <br/><br/>  <p q-attr="attrs">aaa</p> <p q-css="attrs.style">aaabbb</p>  <p q-show="isShow">aaabbbccc</p> <input type="checkbox" q-value="isCheck">isCheck</input> <input type="text" q-value="textValue"></input> <a href="javascript:" q-on="aEvents">test directive on</a>  <p q-if="ifValue">if this is true!</p><p q-if="!ifValue">if this is false!</p>  <br/><br/>  <div q-repeat="list" q-class="{red: isRed}"><h4 q-text="__index + \'. \' + parent.title + \'>\' + title"></h4><p q-text="desc"></p></div> </myCom2>', {
 	    getDefaultProps: function() {
 	        return {
 	            isBlue: 1
@@ -98,6 +100,7 @@
 	    title: 'Hello world!',
 	    summary: 'hahahaha',
 	    author: 'long',
+	    url: 'http://9.url.cn/edu/img/index/bg-logo-new.385c8.png',
 	    html: '<a href="javascript:" >haha</a>',
 	    attrs: {
 	        style: {
@@ -214,7 +217,6 @@
 
 	var util = __webpack_require__(3);
 	var domUtil = __webpack_require__(4);
-	var Q = __webpack_require__(1);
 
 	var qIfKey = 'qIf';
 	var directives = {
@@ -256,7 +258,7 @@
 	                        }
 	                    }
 	                } else if (k in dom) {
-	                    dom[k] = v;
+	                    dom[k] = v[k];
 	                } else {
 	                    domUtil.setAttribute(dom, k, v[k]);
 	                }
@@ -335,24 +337,24 @@
 	            parent && domUtil.replaceChild(parent, data.ref, dom);
 	            data.if_value = false;
 	        }
-	    },
-	    repeat: function(v, dom, w) {
-	        var data = this.optMap[w.id];
-	        var parent;
+	    // },
+	    // repeat: function(v, dom, w) {
+	    //     var data = this.optMap[w.id];
+	    //     var parent;
 
-	        if (typeof v !== 'object') {
-	            return;
-	        }
+	    //     if (typeof v !== 'object') {
+	    //         return;
+	    //     }
 
-	        if (!(v instanceof Array)) {
-	            v = [v];
-	        }
+	    //     if (!(v instanceof Array)) {
+	    //         v = [v];
+	    //     }
 
-	        if (!data.repeat) {
-	            data.repeat = Q.Repeat(domUtil.getDomString(dom));
-	            parent = domUtil.getParentNode(dom);
-	            parent && domUtil.replaceChild(parent, data.repeat.getDom(), dom);
-	        }
+	    //     if (!data.repeat) {
+	    //         data.repeat = Q.Repeat(domUtil.getDomString(dom));
+	    //         parent = domUtil.getParentNode(dom);
+	    //         parent && domUtil.replaceChild(parent, data.repeat.getDom(), dom);
+	    //     }
 	    },
 
 	    // special for component
@@ -545,11 +547,11 @@
 	    var simulateItem;
 	    var simulateItemKey;
 
-	    console.log('>>> listDiff:');
-	    printList(oldList, key);
-	    console.log('');
-	    printList(newList, key);
-	    console.log('');
+	    // console.log('>>> listDiff:');
+	    // printList(oldList, key);
+	    // console.log('');
+	    // printList(newList, key);
+	    // console.log('');
 
 	    // fist pass to check item in old list: if it's removed or not
 	    while (i < oldList.length) {
@@ -969,7 +971,6 @@
 
 	        return this._html;
 	    },
-	    destroy: function() {},
 	    update: function(props, should) {
 	        var self = this;
 	        var shouldUpdate;
@@ -1005,7 +1006,7 @@
 
 	var repeatBasePrototye = util.extend({}, basePrototype, {
 	    update: function(props) {
-	        console.log('>>> repeat item update:', props);
+	        // console.log('>>> repeat item update:', props);
 	        util.extend(this, props);
 	        this.dc();
 	    }
@@ -1079,14 +1080,14 @@
 	    var comName = domUtil.getNodeName(root);
 	    var temp;
 
-	    console.log('>>> component1:', html, comName, isRepeat);
+	    // console.log('>>> component1:', html, comName, isRepeat);
 
 	    var clazz = function(innerHtml) {
 	        var that = this;
 	        var innerDom;
 	        var innerYieldMap;
 
-	        console.log('>>> new clazz:', clazz.comName, innerHtml, isRepeat);
+	        // console.log('>>> new clazz:', clazz.comName, innerHtml, isRepeat);
 
 	        buildComponent(clazz, this, isRepeat);
 
@@ -1115,7 +1116,6 @@
 	                // TODO: for repeat
 	                yieldKey = domUtil.getAttribute(dom, 'from');
 	                yieldDom = innerYieldMap[yieldKey];
-	                console.log('>>> new class yield:', yieldKey, innerYieldMap);
 	                if (yieldDom) {
 	                    // console.log('>>> find yield:', dom, domUtil.getInnerHtml(dom), yieldDom, domUtil.getInnerHtml(yieldDom));
 	                    domUtil.replaceChild(domUtil.getParentNode(dom), yieldDom, dom);
@@ -1140,7 +1140,6 @@
 	                if (that.root !== dom && qRepeat) {
 	                    itemClass = self.component(domUtil.getDomString(dom), null, null, true);
 	                    child = new self.Repeat(itemClass, innerHtml);
-	                    console.log('>>> aaaaaaa >>>>', domUtil.getDomString(dom), innerHtml);
 	                    that.children.push(child);
 	                    child.setParent(that);
 
@@ -1237,7 +1236,7 @@
 	    // 不同：正式处理还会处理yield出来的那部分
 	    // 这里只是为了加速expr的编译速度，但是加了一些“重复”代码
 	    util.walk(isRepeat ? root : domUtil.getChildNodes(root), function(dom) {
-	        console.log('>>> walk:', dom);
+	        // console.log('>>> walk:', dom);
 	        var name = domUtil.getNodeName(dom);
 	        var C = self.getComClass(name);
 	        var p;
@@ -1299,7 +1298,7 @@
 	    // 注册组件
 	    !isRepeat && this.setComClass(comName, clazz);
 
-	    console.log('>>> clazz:', clazz, clazz.comName + '1', clazz._html, clazz.watcherMap, clazz.watchers);
+	    // console.log('>>> clazz:', clazz, clazz.comName + '1', clazz._html, clazz.watcherMap, clazz.watchers);
 
 	    return clazz;
 	};
@@ -1536,7 +1535,7 @@
 	 * init expression
 	 */
 	function makeExpr(expr) {
-	    console.log('>>> makeExpr:', expr);
+	    // console.log('>>> makeExpr:', expr);
 	    if (typeof expr === 'string') {
 	        return tmpl.compile(expr);
 	    } else if (typeof expr === 'object') {
@@ -1954,7 +1953,7 @@
 	    var patch;
 	    var index;
 
-	    console.log('>>> repeat update:', list);
+	    // console.log('>>> repeat update:', list);
 	    if (typeof list !== 'object') {
 	        return;
 	    }
@@ -2125,7 +2124,6 @@
 	 * 
 	 */
 	function get() {
-	    console.log('>>> pool get:', this.clazz, this.param);
 	    if (this.cache.length) {
 	        return this.cache.pop();
 	    } else {
@@ -2139,7 +2137,7 @@
 	 * 
 	 */
 	function release(obj) {
-	    obj.destroy();
+	    // obj.destroy();
 	    this.cache.push(obj);
 	}
 

@@ -14,7 +14,9 @@ var MyCom4 = Q.component('<MyCom4><h2 q-text="title"></h2><p q-text="desc"></p><
 
 var MyCom5 = Q.component('<MyCom5><h1 q-text="title"></h1><ul><li q-repeat="list"><h2 q-text="title"></h2><p q-text="desc"></p><yield from="date"></yield></li></ul></MyCom5>');
 
-var MyCom2 = Q.component('<myCom2>  <MyCom5 title="title" list="list"><yield to="date"><p q-text="123 + title"></p></yield></MyCom5>  <br/><br/>  <com1 q-repeat="list" title="3 + __index + \'. \' + title" desc="desc"><yield to="p1"><p q-text="desc"></p></yield></com1>  <br/><br/>  <MyCom4 q-repeat="list" title="__index + \'. \' + parent.title + \'>\' + title" desc="desc"></MyCom4>  <br/><br/>  <com1 q-if="!ifValue" title="title+\' Long! \'" html="html" desc="summary" title2="title + \'2\'"><yield to="p1"><p q-html="html"></p></yield>  <yield to="p2"><com2 title="title+\' try! \'" title2="title2"><yield to="p1"><h1 q-text="\'title: \' + title2"></h1></yield></com2></yield></com1>   <br/><br/>   <h1 q-text="title"></h1><myCom title="title" summary="summary" is-blue="isBlue" is-big="1"></myCom><p q-text="author" q-class="{aa:isBlue, bb:0}"></p><MyCom3 title="summary"></MyCom3>  <br/><br/>  <p q-attr="attrs">aaa</p> <p q-css="attrs.style">aaabbb</p>  <p q-show="isShow">aaabbbccc</p> <input type="checkbox" q-value="isCheck">isCheck</input> <input type="text" q-value="textValue"></input> <a href="javascript:" q-on="aEvents">test directive on</a>  <p q-if="ifValue">if this is true!</p><p q-if="!ifValue">if this is false!</p>  <br/><br/>  <div q-repeat="list" q-class="{red: isRed}"><h4 q-text="__index + \'. \' + parent.title + \'>\' + title"></h4><p q-text="desc"></p></div> </myCom2>', {
+var MyCom6 = Q.component('<MyCom6><img class="image" src="about:blank" q-attr="{src: url}"></MyCom6>');
+
+var MyCom2 = Q.component('<myCom2>  <MyCom6 url="url"></MyCom6>  <MyCom5 title="title" list="list"><yield to="date"><p q-text="123 + title"></p></yield></MyCom5>  <br/><br/>  <com1 q-repeat="list" title="3 + __index + \'. \' + title" desc="desc"><yield to="p1"><p q-text="desc"></p></yield></com1>  <br/><br/>  <MyCom4 q-repeat="list" title="__index + \'. \' + parent.title + \'>\' + title" desc="desc"></MyCom4>  <br/><br/>  <com1 q-if="!ifValue" title="title+\' Long! \'" html="html" desc="summary" title2="title + \'2\'"><yield to="p1"><p q-html="html"></p></yield>  <yield to="p2"><com2 title="title+\' try! \'" title2="title2"><yield to="p1"><h1 q-text="\'title: \' + title2"></h1></yield></com2></yield></com1>   <br/><br/>   <h1 q-text="title"></h1><myCom title="title" summary="summary" is-blue="isBlue" is-big="1"></myCom><p q-text="author" q-class="{aa:isBlue, bb:0}"></p><MyCom3 title="summary"></MyCom3>  <br/><br/>  <p q-attr="attrs">aaa</p> <p q-css="attrs.style">aaabbb</p>  <p q-show="isShow">aaabbbccc</p> <input type="checkbox" q-value="isCheck">isCheck</input> <input type="text" q-value="textValue"></input> <a href="javascript:" q-on="aEvents">test directive on</a>  <p q-if="ifValue">if this is true!</p><p q-if="!ifValue">if this is false!</p>  <br/><br/>  <div q-repeat="list" q-class="{red: isRed}"><h4 q-text="__index + \'. \' + parent.title + \'>\' + title"></h4><p q-text="desc"></p></div> </myCom2>', {
     getDefaultProps: function() {
         return {
             isBlue: 1
@@ -52,6 +54,7 @@ c2.update({
     title: 'Hello world!',
     summary: 'hahahaha',
     author: 'long',
+    url: 'http://9.url.cn/edu/img/index/bg-logo-new.385c8.png',
     html: '<a href="javascript:" >haha</a>',
     attrs: {
         style: {
