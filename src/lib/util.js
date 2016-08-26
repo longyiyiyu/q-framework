@@ -24,8 +24,11 @@ function walk(doms, cb) {
         el = doms[i];
         if (domUtil.getNodeType(el) === 1) {
             r = cb(el);
+        } else {
+            continue;
         }
 
+        // console.log('>>> walk:', domUtil.getNodeName(el), r);
         if (r === false) {
             continue;
         } else if (r && r !== true) {
@@ -237,6 +240,10 @@ listDiff.INSERT = 1;
 
 /* listDiff end */
 
+function isPlainObject(obj) {
+    return {}.toString.call(obj) == '[object Object]';
+}
+
 module.exports = {
     getId: getId,
     walk: walk,
@@ -253,5 +260,6 @@ module.exports = {
     getRandomId: function() {
         return Math.ceil(Math.random() * 1000000);
     },
-    camelize: camelize
+    camelize: camelize,
+    isPlainObject: isPlainObject
 };

@@ -38,12 +38,13 @@ function update(list) {
     var index;
 
     // console.log('>>> repeat update:', list);
-    if (typeof list !== 'object') {
-        return;
-    }
+    // if (typeof list !== 'object') {
+    //     return;
+    // }
 
     if (!(list instanceof Array)) {
-        list = [list];
+        // list = [list];
+        return;
     }
 
     var parent = domUtil.getParentNode(this.root);
@@ -135,6 +136,7 @@ function update(list) {
 
 /*
  * Repeat component class, internal class
+ * @param   {Class}     itemClass   repeat item 类
  * @param   {String}    innerHtml   需要repeat的html片段
  * @param   {Array}     list        初始属性
  * 

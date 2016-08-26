@@ -63,7 +63,7 @@ describe('core/dc', function() {
         obj.time.should.be.eql(1);
     });
 
-    it('the value compared by "==="" not "=="', function() {
+    it('should compare the values by "==="" not "=="', function() {
         delete obj.a;
         delete obj.ret;
 
@@ -81,26 +81,134 @@ describe('core/dc', function() {
         obj.ret.should.be.eql('2');
     });
 
-    it('check the object value just by "===" while it will not look inside', function() {
-        delete obj.a;
-        delete obj.ret;
-        obj.time = 0;
+    describe('for object type', function() {
+        beforeEach(function() {
+            delete obj.a;
+            delete obj.ret;
+            obj.dc();
+            obj.time = 0;
+        });
 
-        should(obj.ret).be.eql(undefined);
-        should(obj.a).be.eql(undefined);
+        it('should work with undefined', function() {
+            obj.a = {
+                v: 1
+            };
+            obj.dc();
+            obj.time.should.be.eql(1);
+        });
 
-        obj.a = {
-            v: 1
-        };
-        obj.dc();
+        it('should look inside', function() {
+            obj.a = {
+                v: 1
+            };
+            obj.dc();
+            obj.time.should.be.eql(1);
 
-        obj.time.should.be.eql(1);
+            obj.a.v = 2;
+            obj.dc();
+            obj.time.should.be.eql(2);
+        });
 
-        // deep equal check is time-consuming, so it just check the object value by "==="
-        // by using this framework with redux, it will work well
-        obj.a.v = 2;
-        obj.dc();
-        obj.time.should.be.eql(1);
+        it('should look inside for just one layer', function() {
+            obj.a = {
+                b: {
+                    c: 1
+                }
+            };
+            obj.dc();
+            obj.time.should.be.eql(1);
+
+            obj.a.b.c = 2;
+            obj.dc();
+            obj.time.should.be.eql(1);
+        });
+
+        it('should not check the outer object', function() {
+            obj.a = {
+                v: 1
+            };
+            obj.dc();
+            obj.time.should.be.eql(1);
+
+            obj.a = {
+                v: 1
+            };
+            obj.dc();
+            obj.time.should.be.eql(1);
+        });
+
+        it('should check the value with "==="', function() {
+            obj.a = {
+                b: {
+                    c: 1
+                }
+            };
+            obj.dc();
+            obj.time.should.be.eql(1);
+
+            obj.a.b = {
+                c: 1
+            };
+            obj.dc();
+            obj.time.should.be.eql(2);
+        });
+    });
+
+    describe('for array type', function() {
+        beforeEach(function() {
+            delete obj.a;
+            delete obj.ret;
+            obj.dc();
+            obj.time = 0;
+        });
+
+        it('should work with undefined', function() {
+            obj.a = [1, 2];
+            obj.dc();
+            obj.time.should.be.eql(1);
+        });
+
+        it('should look inside', function() {
+            obj.a = [1, 2];
+            obj.dc();
+            obj.time.should.be.eql(1);
+
+            obj.a[0] = 3;
+            obj.dc();
+            obj.time.should.be.eql(2);
+        });
+
+        it('should find the different with object items', function() {
+            obj.a = [{
+                b: {
+                    c: 1
+                }
+            }, 2];
+            obj.dc();
+            obj.time.should.be.eql(1);
+
+            obj.a[0] = {
+                b: {
+                    c: 1
+                }
+            };
+            obj.dc();
+            obj.time.should.be.eql(2);
+
+            obj.a[0].b.c = 2;
+            obj.dc();
+            obj.time.should.be.eql(2);
+        });
+
+        it('should find the different with array items', function() {
+            obj.a = [[[1, 3], 2], 2];
+            obj.dc();
+            obj.time.should.be.eql(1);
+
+            obj.a[0][0][0] = 2;
+            obj.dc();
+            obj.time.should.be.eql(2);
+        });
     });
 
     it('shoulk remove the watcher correctly', function() {
@@ -124,5 +232,7 @@ describe('core/dc', function() {
 
         obj.ret.should.be.eql(1);
         obj.time.should.be.eql(1);
+
+        obj.watch('a', trigger);
     });
 });

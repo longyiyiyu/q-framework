@@ -66,6 +66,65 @@ function makeExpr(expr) {
 }
 
 /*
+ * check value diff
+ * for object type: check the values are diff in one layer
+ * for array type: check the values in array are diff
+ * 
+ */
+function isValueDiff(n, o) {
+    var nkeys;
+    var okeys;
+    var i;
+    var l;
+
+    if (util.isPlainObject(n)) {
+        if (!util.isPlainObject(o)) return true;
+        nkeys = Object.keys(n);
+        okeys = Object.keys(o);
+        if (nkeys.length != okeys.length) return true;
+        for (i = 0, l = nkeys.length; i < l; ++i) {
+            if (n[nkeys[i]] !== o[nkeys[i]]) {
+                return true;
+            }
+        }
+
+        return false;
+    } else if (n instanceof Array) {
+        if (!o) return true;
+        if (n.length !== o.length) return true; // for quick
+        for (i = 0, l = n.length; i < l; ++i) {
+            if (arguments.callee(n[i], o[i])) {
+                return true;
+            }
+        }
+
+        return false;
+    } else {
+        return n !== o;
+    }
+}
+
+function cloneNewValue(v) {
+    var ret;
+
+    if (util.isPlainObject(v)) {
+        ret = {};
+        for (var key in v) {
+            ret[key] = v[key];
+        }
+    } else if (v instanceof Array) {
+        ret = [];
+        for (var i = 0, l = v.length; i < l; ++i) {
+            ret.push(arguments.callee(v[i]));
+        }
+    } else {
+        ret = v;
+    }
+
+    return ret;
+}
+
+/*
  * dirty check
  * dc 是属于component元素自己的，不是全局的
  * 
@@ -77,10 +136,10 @@ function dc() {
     for (var i = 0, l = this.watchers.length; i < l; ++i) {
         w = this.watchers[i];
         v = w.expr.call(this /* , function err(err, ctx) {} */ );
-        // console.log('>>> dc:', v);
-        if (this.valueMap[w.id] !== v) {
+        // if (this.valueMap[w.id] !== v) {
+        if (isValueDiff(v, this.valueMap[w.id])) {
             // 先设置新值，不然可能会死循环
-            this.valueMap[w.id] = v;
+            this.valueMap[w.id] = cloneNewValue(v);
             w.trigger.call(this, v, w);
         }
     }

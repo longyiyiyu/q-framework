@@ -13,3 +13,4 @@ require('./spec/on')(Q);
 require('./spec/if')(Q);
 require('./spec/component')(Q);
 require('./spec/repeat')(Q);
+require('./spec/yield')(Q);

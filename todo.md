@@ -13,3 +13,6 @@
 [Y] 12. source build
 [Y] 13. test build
 [-] 14. simple used build
+[Y] 15. dc update
+[-] 16. home website
+[-] 17. examples[todo MVC]

@@ -52,7 +52,6 @@ var basePrototype = {
             return;
         }
 
-        // console.log('>>> update:', props);
         props && this.trigger('update', props);
         if (should === true) {
             shouldUpdate = true;
@@ -102,6 +101,7 @@ function getYeildMap(root) {
         if (name === 'yield') {
             key = domUtil.getAttribute(dom, 'to');
             map[key] = dom;
+            return false;
         }
     });
 
@@ -158,7 +158,7 @@ var component = function(html, prototype, css, isRepeat) {
     var clazz = function(innerHtml) {
         var that = this;
         var innerDom;
-        var innerYieldMap;
+        var innerYieldMap = {};
 
         // console.log('>>> new clazz:', clazz.comName, innerHtml, isRepeat);
 
@@ -291,7 +291,7 @@ var component = function(html, prototype, css, isRepeat) {
             }
         });
 
-        !isRepeat && this.trigger('init');
+        !isRepeat && this.init && this.init();
 
         util.extend(this, this.defaultProps);
     };
