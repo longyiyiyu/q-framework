@@ -65,6 +65,7 @@ module.exports = function(Q) {
             var componentHtml =
                 '<com>\
                     <h1 class="test4" q-text="text"></h1>\
+                    <p class="test4-1" q-text="desc"></p>\
                 </com>';
             var com;
 
@@ -82,7 +83,76 @@ module.exports = function(Q) {
                 $('#component-test .test4').text().should.be.equal(str);
             });
 
-            it('should be able to update the component in the updating', function() {
+            it('should be able to update the component in the updating', function(done) {
+                var str1 = 'Hello';
+                var str2 = 'Hello World';
+                var ComClass = Q.component(componentHtml);
+
+                com = new ComClass();
+                cnt.appendChild(com.getDom());
+
+                var time = 1;
+                com.on('update', function() {
+                    if (time === 1) {
+                        this.update({
+                            text: str2
+                        });
+                    }
+                });
+
+                com.on('updated', function() {
+                    if (time === 1) {
+                        $('#component-test .test4').text().should.be.equal(str1);
+                    } else if (time === 2) {
+                        $('#component-test .test4').text().should.be.equal(str2);
+                        done();
+                    }
+                    time++;
+                });
+
+                com.update({
+                    text: str1
+                });
+            });
+
+            it('should merge the date wanted to be updated in an updating cycle', function(done) {
+                var str1 = 'Hello';
+                var str2 = 'Hello World';
+                var str3 = 'Jack';
+                var ComClass = Q.component(componentHtml);
+
+                com = new ComClass();
+                cnt.appendChild(com.getDom());
+
+                var updateTime = 0;
+                var time = 1;
+                com.on('update', function() {
+                    if (++updateTime === 1) {
+                        this.update({
+                            text: str2
+                        });
+                    }
+                });
+
+                com.on('updated', function() {
+                    if (time === 1) {
+                        $('#component-test .test4').text().should.be.equal(str1);
+                        $('#component-test .test4-1').text().should.be.equal(str1);
+                        this.update({
+                            desc: str3
+                        });
+                    } else if (time === 2) {
+                        $('#component-test .test4').text().should.be.equal(str2);
+                        $('#component-test .test4-1').text().should.be.equal(str3);
+                        done();
+                    }
+                    time++;
+                });
+
+                com.update({
+                    text: str1,
+                    desc: str1
+                });
             });
 
             afterEach(function() {
