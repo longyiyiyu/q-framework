@@ -45,7 +45,7 @@ Temporary Items
 *.log
 node_modules
 lego_modules
-dist
+dist/docs
 mochawesome-reports
 
 # gitbook

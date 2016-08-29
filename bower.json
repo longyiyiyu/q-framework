@@ -1,0 +1,36 @@
+{
+  "name": "qui",
+  "description": "an ui library with q directives",
+  "main": "dist/Qui.js",
+  "authors": [
+    "longyiyiyu"
+  ],
+  "license": "MIT",
+  "keywords": [
+    "Q",
+    "Qui",
+    "directives",
+    "ui",
+    "library"
+  ],
+  "homepage": "https://github.com/longyiyiyu/q-framework",
+  "ignore": [
+    "**/.*",
+    "node_modules",
+    "bower_components",
+    "test",
+    "tests",
+
+    "_book",
+    "*.json",
+    "ideal",
+    "src",
+    "docs",
+    "*.bat",
+    "*.md",
+    "license",
+    "gulpfile.js",
+    "karma.conf.js",
+    "webpack.config.js"
+  ]
+}

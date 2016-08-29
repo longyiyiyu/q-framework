@@ -2,7 +2,7 @@
   "name": "qui",
   "version": "0.0.1",
   "description": "an ui library with q directives",
-  "main": "dist/Q.js",
+  "main": "dist/Qui.js",
   "scripts": {
     "test": "gulp test"
   },
