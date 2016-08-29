@@ -47,3 +47,6 @@ node_modules
 lego_modules
 dist
 mochawesome-reports
+
+# gitbook
+_book
