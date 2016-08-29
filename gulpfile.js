@@ -81,7 +81,8 @@ gulp.task('test-browser', function(done) {
     karma.start({
         configFile: __dirname + '/karma.conf.js',
         singleRun: true,
-        browsers: [process.env.TRAVIS ? 'Firefox' : 'Chrome', 'PhantomJS']
+        browsers: process.env.TRAVIS ? ['PhantomJS'] : ['Chrome', 'PhantomJS']
+        // browsers: [process.env.TRAVIS ? 'Firefox' : 'Chrome', 'PhantomJS']
     }, done);
 });
 /* ------------------- browser test ------------------- */
