@@ -872,6 +872,10 @@ return /******/ (function(modules) { // webpackBootstrap
 	        }
 
 	        // console.log('>>> update:', props);
+	        if (this._beforeUpdate(props)) {
+	            return;
+	        }
+
 	        props && this.trigger('update', props);
 	        if (should === true) {
 	            shouldUpdate = true;
@@ -889,9 +893,27 @@ return /******/ (function(modules) { // webpackBootstrap
 	        if (shouldUpdate) {
 	            this.dc();
 	            this.hasUpdated = true;
-	            setTimeout(function() {
-	                self.trigger('updated');
-	            }, 32);
+	            self.trigger('updated');
+	        }
+
+	        self._afterUpdate();
+	    },
+	    _beforeUpdate: function(props) {
+	        // console.log('>>> _beforeUpdate:', this.__updating, this.__waitingProps);
+	        if (this.__updating) {
+	            this.__waitingProps = util.extend(this.__waitingProps || {}, props);
+	            return true;
+	        } else {
+	            this.__updating = true;
+	            delete this.__waitingProps;
+	        }
+	    },
+	    _afterUpdate: function() {
+	        // console.log('>>> _afterUpdate:', this.__updating, this.__waitingProps);
+	        if (!this.__updating) return;
+	        this.__updating = false;
+	        if (this.__waitingProps) {
+	            this.update(this.__waitingProps);
 	        }
 	    }
 	};
