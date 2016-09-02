@@ -17,6 +17,11 @@ module.exports = {
     plugins: [
         new webpack.BannerPlugin(banner, {
             raw: true
-        })
+        }), 
+        new webpack.DefinePlugin({
+            __ENV__: JSON.stringify('S')
+        }),
+        // new webpack.optimize.UglifyJsPlugin(),
+        // new webpack.optimize.OccurrenceOrderPlugin()
     ]
 };

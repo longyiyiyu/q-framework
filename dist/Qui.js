@@ -78,13 +78,13 @@ return /******/ (function(modules) { // webpackBootstrap
 	__webpack_require__(1)(Q, Q);
 
 	// enhance component
-	__webpack_require__(6)(Q, Q);
+	__webpack_require__(5)(Q, Q);
 
 	// enhance repeat
-	__webpack_require__(11)(Q, Q);
+	__webpack_require__(10)(Q, Q);
 
 	// enhance mixin
-	__webpack_require__(10)(Q, Q);
+	__webpack_require__(9)(Q, Q);
 
 	module.exports = Q;
 
@@ -561,7 +561,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	 * 
 	 */
 
-	var impl = __ENV__ === 'B' ? __webpack_require__(4) : __webpack_require__(5);
+	var impl =  false ? require('../browser/dom') : __webpack_require__(4);
 
 	function getDomTree(el) {
 	    return impl.getDomTree(el);
@@ -686,119 +686,6 @@ return /******/ (function(modules) { // webpackBootstrap
 /* 4 */
 /***/ function(module, exports) {
 
-	var div = document.createElement('div');
-	var singleTagRE = /^<(\w+)\s*\/?>(?:<\/\1>|)$/;
-	var _slice = [].slice;
-
-	module.exports = {
-	    getDomTree: function(html) {
-	        var dom;
-
-	        // 简单实现，要考虑特殊标签的话，请参考zepto的实现
-	        // A special case optimization for a single tag
-	        if (singleTagRE.test(html)) dom = [$(document.createElement(RegExp.$1))];
-	        if (!dom) {
-	            div.innerHTML = '' + html;
-	            dom = _slice.call(div.childNodes, 0);
-	        }
-
-	        return dom;
-	    },
-	    getDomString: function(el) {
-	        return el.outerHTML;
-	    },
-	    getInnerHtml: function(el) {
-	        return el.innerHTML;
-	    },
-	    setInnerHtml: function(el, html) {
-	        return (el.innerHTML = html);
-	    },
-	    setText: function(el, text) {
-	        return (el.innerText = text);
-	    },
-	    getNodeType: function(el) {
-	        return el.nodeType;
-	    },
-	    getNodeName: function(el) {
-	        return el.nodeName.toLowerCase();
-	    },
-	    getParentNode: function(el) {
-	        return el.parentNode;
-	    },
-	    getChildNodes: function(el) {
-	        return _slice.call(el.childNodes, 0);
-	    },
-	    getAttributes: function(el) {
-	        return el.attributes;
-	    },
-	    getAttribute: function(el, key) {
-	        return el.getAttribute(key);
-	    },
-	    setAttribute: function(el, key, value) {
-	        return el.setAttribute(key, value);
-	    },
-	    addClass: function(el, cls) {
-	        if (el.classList) {
-	            el.classList.add(cls);
-	        } else {
-	            var cur = ' ' + (el.className || '') + ' ';
-	            if (cur.indexOf(' ' + cls + ' ') < 0) {
-	                el.className = (cur + cls).trim();
-	            }
-	        }
-	    },
-	    removeClass: function(el, cls) {
-	        if (el.classList) {
-	            el.classList.remove(cls);
-	        } else {
-	            var cur = ' ' + (el.className || '') + ' ',
-	                tar = ' ' + cls + ' ';
-	            while (cur.indexOf(tar) >= 0) {
-	                cur = cur.replace(tar, ' ');
-	            }
-	            el.className = cur.trim();
-	        }
-	    },
-	    replaceChild: function(el, n, o) {
-	        return el.replaceChild(n, o);
-	    },
-	    insertBefore: function(el, n, o) {
-	        return el.insertBefore(n, o);
-	    },
-	    removeChild: function(el, n) {
-	        return el.removeChild(n);
-	    },
-	    getClassName: function(el) {
-	        return el.className;
-	    },
-	    setClassName: function(el, cn) {
-	        el.className = cn;
-	    },
-	    getStyle: function(el, k) {
-	        return el.currentStyle ?
-	            el.currentStyle[k] :
-	            getComputedStyle(el, null)[k];
-	    },
-	    setStyle: function(el, k, v) {
-	        el.style[k] = v;
-	    },
-	    setValue: function(el, v) {
-	        if (el.type === 'checkbox') {
-	            el.checked = !!v;
-	        } else {
-	            el.value = v;
-	        }
-	    },
-	    addEventListener: function(el, type, cb, useCapture) {
-	        el.addEventListener(type, cb, useCapture);
-	    },
-	};
-
-
-/***/ },
-/* 5 */
-/***/ function(module, exports) {
-
 	module.exports = {
 	    getDomTree: function(html) {
 	    },
@@ -814,7 +701,7 @@ return /******/ (function(modules) { // webpackBootstrap
 
 
 /***/ },
-/* 6 */
+/* 5 */
 /***/ function(module, exports, __webpack_require__) {
 
 	/**
@@ -824,12 +711,12 @@ return /******/ (function(modules) { // webpackBootstrap
 	 * 
 	 */
 
-	var tmpl = __webpack_require__(7);
+	var tmpl = __webpack_require__(6);
 	var util = __webpack_require__(2);
 	var domUtil = __webpack_require__(3);
-	var dc = __webpack_require__(8);
-	var ev = __webpack_require__(9);
-	var m = __webpack_require__(10);
+	var dc = __webpack_require__(7);
+	var ev = __webpack_require__(8);
+	var m = __webpack_require__(9);
 
 	var ID_KEY = 'q-id-p';
 	var qRepeatKey = 'qRepeat';
@@ -1243,7 +1130,7 @@ return /******/ (function(modules) { // webpackBootstrap
 
 
 /***/ },
-/* 7 */
+/* 6 */
 /***/ function(module, exports) {
 
 	/**
@@ -1416,7 +1303,7 @@ return /******/ (function(modules) { // webpackBootstrap
 
 
 /***/ },
-/* 8 */
+/* 7 */
 /***/ function(module, exports, __webpack_require__) {
 
 	/**
@@ -1426,7 +1313,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	 * 
 	 */
 
-	var tmpl = __webpack_require__(7);
+	var tmpl = __webpack_require__(6);
 	var util = __webpack_require__(2);
 
 	/*
@@ -1608,7 +1495,7 @@ return /******/ (function(modules) { // webpackBootstrap
 
 
 /***/ },
-/* 9 */
+/* 8 */
 /***/ function(module, exports, __webpack_require__) {
 
 	/**
@@ -1788,7 +1675,7 @@ return /******/ (function(modules) { // webpackBootstrap
 
 
 /***/ },
-/* 10 */
+/* 9 */
 /***/ function(module, exports, __webpack_require__) {
 
 	/**
@@ -1885,7 +1772,7 @@ return /******/ (function(modules) { // webpackBootstrap
 
 
 /***/ },
-/* 11 */
+/* 10 */
 /***/ function(module, exports, __webpack_require__) {
 
 	/**
@@ -1897,7 +1784,7 @@ return /******/ (function(modules) { // webpackBootstrap
 
 	var util = __webpack_require__(2);
 	var domUtil = __webpack_require__(3);
-	var Pool = __webpack_require__(12);
+	var Pool = __webpack_require__(11);
 	var REPEATIDKEY = '__repeatId';
 
 	function removeInsertItem(list, index, key) {
@@ -2069,7 +1956,7 @@ return /******/ (function(modules) { // webpackBootstrap
 
 
 /***/ },
-/* 12 */
+/* 11 */
 /***/ function(module, exports, __webpack_require__) {
 
 	/**
