@@ -3,13 +3,23 @@
 <head>
     <meta charset="UTF-8">
     <title>hello world</title>
-    <script>window.__ENV__ = 'B'</script>
     <script src="../../dist/Qui.min.js"></script>
 </head>
 <body>
+    <hello title="Hello world!"></hello>
+
+    <script src="./tmp/hello/index.js"></script>
     <script type="text/javascript">
-        console.log('>>>');
-        console.log(Q);
+        // console.log('>>>');
+        // console.log(Q);
+        var Hello = Q.getComClass('hello');
+        var hello = new Hello('');
+
+        hello.update({
+            title: 'Hello world!'
+        });
+
+        document.appendChild(hello.getDom());
     </script>
 </body>
 </html>

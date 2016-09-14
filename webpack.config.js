@@ -10,17 +10,17 @@ var banner =
 
 module.exports = {
     output: {
-        filename: 'Qui.js',
+        // filename: 'Qui.js',
         library: 'Q',
         libraryTarget: 'umd'
     },
     plugins: [
         new webpack.BannerPlugin(banner, {
             raw: true
-        }), 
-        new webpack.DefinePlugin({
-            __ENV__: JSON.stringify('S')
-        }),
+        })//, 
+        // new webpack.DefinePlugin({
+        //     __ENV__: JSON.stringify('B')
+        // }),
         // new webpack.optimize.UglifyJsPlugin(),
         // new webpack.optimize.OccurrenceOrderPlugin()
     ]
